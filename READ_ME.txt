@@ -1,13 +1,18 @@
-all you need to run the scanner
+# Clone the repo (if you haven't already)
+git clone [https://github.com/leggd/RiskForge.git](https://github.com/leggd/RiskForge.git)
+cd RiskForge
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python libraries
+pip install -r requirements.txt
 
 
-1 sudo apt update && sudo apt install nmap -y
 
 
-2 sudo apt install python3 python3-pip python3-venv
+how to run 
 
-
-
-3 source venv/bin/activate
-
-4 pip install python-nmap python-dotenv requests
+source venv/bin/activate
+python3 scanner_0.4.py
