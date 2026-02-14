@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vuln Platform — Settings</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <div class="brand-name">Vuln Platform</div>
+        <div class="brand-sub">Enterprise Console</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">Manage</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+      <a class="nav-item" href="assets.html"><span class="nav-dot"></span>Assets</a>
+      <a class="nav-item" href="scans.html"><span class="nav-dot"></span>Scans</a>
+      <a class="nav-item" href="tickets.html"><span class="nav-dot"></span>Tickets</a>
+
+      <div class="nav-section">Insights</div>
+      <a class="nav-item" href="reports.html"><span class="nav-dot"></span>Reports</a>
+      <a class="nav-item" href="trends.html"><span class="nav-dot"></span>Trends</a>
+
+      <div class="nav-section">Admin</div>
+      <a class="nav-item" href="users.html"><span class="nav-dot"></span>Users</a>
+      <a class="nav-item active" href="settings.html"><span class="nav-dot"></span>Settings</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="page-title">
+        <h1>Settings</h1>
+        <p>Platform configuration</p>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="content">
+
+      <section class="grid two-col">
+
+        <!-- General -->
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>General</h2>
+              <p>Platform-wide behaviour</p>
+            </div>
+          </div>
+
+          <div style="padding:16px">
+            <label class="cell-strong">Default Scan Schedule</label>
+            <p class="cell-sub">Applies to all registered assets</p>
+            <select class="select" style="margin-top:8px">
+              <option>Weekly — Sunday 02:00</option>
+              <option>Daily — 01:00</option>
+              <option>Manual only</option>
+            </select>
+          </div>
+        </article>
+
+        <!-- Security -->
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>Security</h2>
+              <p>Authentication & session controls</p>
+            </div>
+          </div>
+
+          <div style="padding:16px">
+            <div class="cell-strong">Multi-Factor Authentication</div>
+            <p class="cell-sub">Required for administrator accounts</p>
+            <span class="badge badge-good" style="margin-top:8px">Enabled</span>
+
+            <hr style="border-color:rgba(255,255,255,0.1); margin:16px 0">
+
+            <div class="cell-strong">Session Timeout</div>
+            <p class="cell-sub">Automatic logout after inactivity</p>
+            <select class="select" style="margin-top:8px">
+              <option>30 minutes</option>
+              <option>1 hour</option>
+              <option>4 hours</option>
+            </select>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- Risk Scoring -->
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h2>Risk Scoring Model</h2>
+            <p>Enterprise risk calculation parameters</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Factor</th>
+                <th>Description</th>
+                <th class="right">Weight</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CVSS Base Score</td>
+                <td class="cell-sub">Provided by vulnerability scanner</td>
+                <td class="right"><span class="badge">1.0</span></td>
+              </tr>
+              <tr>
+                <td>Exposure</td>
+                <td class="cell-sub">Public vs private asset</td>
+                <td class="right"><span class="badge badge-high">1.3</span></td>
+              </tr>
+              <tr>
+                <td>Criticality</td>
+                <td class="cell-sub">Business impact</td>
+                <td class="right"><span class="badge badge-med">1.2</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+    </main>
+
+    <footer class="footer">
+      <span class="cell-sub">© Vuln Platform</span>
+      <span class="cell-sub">Configuration module</span>
+    </footer>
+
+  </div>
+</div>
+</body>
+</html>

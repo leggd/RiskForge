@@ -1,0 +1,112 @@
+<!-- templates/base.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Page title can be overridden by child templates -->
+  <title>{% block title %}Riskforge{% endblock %}</title>
+
+  <!-- Load your shared stylesheet from Flask's /static folder -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="brand-name">Riskforge Platform</div>
+          <div class="brand-sub">Enterprise Console</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-section">Manage</div>
+
+        <!-- These links will work once you create matching Flask routes -->
+        <a class="nav-item" href="{{ url_for('dashboard') }}"><span class="nav-dot"></span>Dashboard</a>
+        <a class="nav-item" href="#"><span class="nav-dot"></span>Assets</a>
+        <a class="nav-item" href="#"><span class="nav-dot"></span>Scans</a>
+        <a class="nav-item" href="#"><span class="nav-dot"></span>Tickets</a>
+
+        <div class="nav-section">Insights</div>
+        <a class="nav-item" href="#"><span class="nav-dot"></span>Reports</a>
+        <a class="nav-item" href="#"><span class="nav-dot"></span>Trends</a>
+
+        <div class="nav-section">Admin</div>
+        <a class="nav-item" href="#"><span class="nav-dot"></span>Users</a>
+        <a class="nav-item" href="#"><span class="nav-dot"></span>Settings</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="mini-card">
+          <div class="mini-title">Scan schedule</div>
+          <!-- Child templates/routes can pass scan_schedule -->
+          <div class="mini-value">{{ scan_schedule if scan_schedule is defined else "#" }}</div>
+          <button class="btn btn-ghost" type="button">Change</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div class="main">
+
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" type="button" aria-label="Open menu">☰</button>
+
+          <div class="page-title">
+            <!-- Child templates can override these blocks -->
+            <h1>{% block page_h1 %}Dashboard{% endblock %}</h1>
+            <p>{% block page_subtitle %}Security posture overview{% endblock %}</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <label class="search">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input type="search" placeholder="Search assets, tickets, CVEs…" />
+          </label>
+
+          <!-- Later you can point this at your scan-start route -->
+          <a class="btn btn-primary" href="#">New Scan</a>
+
+          <div class="user">
+            <div class="avatar" aria-hidden="true">
+              <!-- If username exists, show its first letter; otherwise 'U' -->
+              {{ (username[0] | upper) if username is defined and username else "U" }}
+            </div>
+
+            <div class="user-meta">
+              <div class="user-name">{{ username }}</div>
+              <div class="user-role">{{ role }}</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- PAGE CONTENT -->
+      <main class="content">
+        {% block content %}
+        <!-- Child templates put their page content here -->
+        {% endblock %}
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="footer">
+        <span class="cell-sub">© Riskforge Platform • Internal use</span>
+        <span class="cell-sub">
+          Last updated: {{ last_updated if last_updated is defined else "#" }}
+        </span>
+      </footer>
+
+    </div>
+  </div>
+</body>
+</html>

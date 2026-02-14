@@ -1,0 +1,20 @@
+<!-- templates/base_public.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>{% block title %}Riskforge{% endblock %}</title>
+
+  <!-- Use the same stylesheet so login matches your theme -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+  <!-- Minimal layout: centered content -->
+  <main style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

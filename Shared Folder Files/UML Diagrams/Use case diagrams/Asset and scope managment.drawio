@@ -1,0 +1,87 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" version="29.3.8">
+  <diagram name="Page-1" id="kAsK2SN3egz_xn7nSxrQ">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-1" parent="1" style="shape=rect;html=1;verticalAlign=top;fontStyle=1;whiteSpace=wrap;align=center;" value="Asset and scope managment" vertex="1">
+          <mxGeometry height="740" width="570" x="230" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-2" parent="1" style="shape=umlActor;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;" value="Admin" vertex="1">
+          <mxGeometry height="60" width="30" x="110" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Manage assets" vertex="1">
+          <mxGeometry height="70" width="140" x="310" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-5" edge="1" parent="1" source="PR5edFHcA8_Cri0wnbtR-2" style="edgeStyle=none;html=1;endArrow=none;verticalAlign=bottom;rounded=0;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="PR5edFHcA8_Cri0wnbtR-4" value="">
+          <mxGeometry relative="1" width="160" as="geometry">
+            <mxPoint x="330" y="460" as="sourcePoint" />
+            <mxPoint x="490" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Verify IP uniqueness&amp;nbsp;" vertex="1">
+          <mxGeometry height="70" width="140" x="380" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-7" edge="1" parent="1" source="PR5edFHcA8_Cri0wnbtR-4" style="edgeStyle=none;html=1;endArrow=open;verticalAlign=bottom;dashed=1;labelBackgroundColor=none;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="PR5edFHcA8_Cri0wnbtR-6" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;">
+          <mxGeometry relative="1" width="160" as="geometry">
+            <mxPoint x="330" y="460" as="sourcePoint" />
+            <mxPoint x="490" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Log asset change" vertex="1">
+          <mxGeometry height="70" width="140" x="600" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-9" edge="1" parent="1" source="PR5edFHcA8_Cri0wnbtR-4" style="edgeStyle=none;html=1;endArrow=open;verticalAlign=bottom;dashed=1;labelBackgroundColor=none;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="PR5edFHcA8_Cri0wnbtR-8" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;">
+          <mxGeometry relative="1" width="160" as="geometry">
+            <mxPoint x="330" y="460" as="sourcePoint" />
+            <mxPoint x="490" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-10" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Retire asset" vertex="1">
+          <mxGeometry height="70" width="140" x="360" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-12" parent="1" style="shape=note;size=15;spacingLeft=5;align=left;whiteSpace=wrap;" value="Condition: if status = retired" vertex="1">
+          <mxGeometry height="40" width="230" x="380" y="565" as="geometry" />
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-13" edge="1" parent="1" source="PR5edFHcA8_Cri0wnbtR-10" style="align=right;html=1;verticalAlign=bottom;rounded=0;labelBackgroundColor=none;endArrow=open;endSize=12;dashed=1;entryX=0.314;entryY=1.014;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="PR5edFHcA8_Cri0wnbtR-4" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="480" y="640" as="sourcePoint" />
+            <mxPoint x="320" y="640" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-14" edge="1" parent="1" source="PR5edFHcA8_Cri0wnbtR-12" style="edgeStyle=none;html=1;endArrow=none;rounded=0;labelBackgroundColor=none;dashed=1;exitX=0.5;exitY=1;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-15" parent="1" style="shape=umlActor;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;" value="Assets table" vertex="1">
+          <mxGeometry height="60" width="30" x="920" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-16" edge="1" parent="1" source="PR5edFHcA8_Cri0wnbtR-4" style="edgeStyle=none;html=1;endArrow=none;verticalAlign=bottom;rounded=0;exitX=0.943;exitY=0.686;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="PR5edFHcA8_Cri0wnbtR-15" value="">
+          <mxGeometry relative="1" width="160" as="geometry">
+            <Array as="points">
+              <mxPoint x="442" y="430" />
+            </Array>
+            <mxPoint x="430" y="560" as="sourcePoint" />
+            <mxPoint x="590" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-17" edge="1" parent="1" source="PR5edFHcA8_Cri0wnbtR-6" style="edgeStyle=none;html=1;endArrow=none;verticalAlign=bottom;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="PR5edFHcA8_Cri0wnbtR-15" value="">
+          <mxGeometry relative="1" width="160" as="geometry">
+            <mxPoint x="430" y="560" as="sourcePoint" />
+            <mxPoint x="590" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-18" parent="1" style="shape=umlActor;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;" value="Audit_log table" vertex="1">
+          <mxGeometry height="60" width="30" x="920" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="PR5edFHcA8_Cri0wnbtR-19" edge="1" parent="1" source="PR5edFHcA8_Cri0wnbtR-8" style="edgeStyle=none;html=1;endArrow=none;verticalAlign=bottom;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="PR5edFHcA8_Cri0wnbtR-18" value="">
+          <mxGeometry relative="1" width="160" as="geometry">
+            <mxPoint x="430" y="560" as="sourcePoint" />
+            <mxPoint x="590" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
