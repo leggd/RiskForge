@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Riskforge — Assets{% endblock %}
+
+{% block page_h1 %}Assets{% endblock %}
+
+{% block page_subtitle %}Register and manage hosts{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="card" style="margin-bottom:20px; color:#ff6b6b;">
+  {{ error }}
+</div>
+{% endif %}
+
+{% if success %}
+<div class="card" style="margin-bottom:20px; color:#4ade80;">
+  {{ success }}
+</div>
+{% endif %}
+      <main class="content">
+        <section class="grid two-col">
+          <article class="card">
+            <div class="card-head">
+              <div><h2>Asset Inventory</h2><p>Assets being monitored by RiskForge</p></div>
+              <div class="card-actions">
+                <select class="select">
+                  <option>All</option><option>Public</option><option>Private</option>
+                </select>
+                <select class="select">
+                  <option>All types</option><option>Web Server</option><option>File Server</option><option>Workstation</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>IP</th>
+                    <th>Type</th>
+                    <th>Exposure</th>
+                    <th>Criticality</th>
+                    <th class="right">Last scan</th>
+                  </tr>
+                </thead>
+                    <tbody>
+                    {% for asset in assets %}
+                    <tr>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ asset.ip_address }}</td>
+                        <td>{{ asset.asset_type.replace("_", " ").title() }}</td>
+                        <td>{{ asset.exposure }}</td>
+                        <td>{{ asset.criticality.replace("_", " ").title() }}</td>
+                        <td>{{ asset.last_scanned_at if asset.last_scanned_at else "Never" }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="card">
+  <div class="card-head">
+    <div>
+      <h2>Add Asset</h2>
+      <p>Register a new host in the inventory</p>
+    </div>
+    <span class="badge">Form</span>
+  </div>
+
+  <form method="POST" action="/assets">
+    <div style="padding: 0 16px 16px;">
+      <label class="cell-sub">Asset name</label>
+      <input class="select" style="width:100%; margin:8px 0 12px;" name="name" placeholder="e.g., web-02" required/>
+      <label class="cell-sub">IP address</label>
+      <input class="select" style="width:100%; margin:8px 0 12px;" name="ip_address" placeholder="e.g., 192.168.10.11" required/>
+      <label class="cell-sub">Asset type</label>
+      <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_type" required>
+        <option value="WEB_SERVER">Web Server</option>
+        <option value="FILE_SERVER">File Server</option>
+        <option value="DATABASE_SERVER">Database Server</option>
+        <option value="WORKSTATION">Workstation</option>
+        <option value="OTHER">Other</option>
+      </select>
+      <label class="cell-sub">Exposure</label>
+      <select class="select" style="width:100%; margin:8px 0 12px;" name="exposure" required>
+        <option value="PUBLIC">Public</option>
+        <option value="PRIVATE">Private</option>
+      </select>
+      <label class="cell-sub">Criticality</label>
+      <select class="select" style="width:100%; margin:8px 0 16px;" name="criticality" required>
+        <option value="LOW">Low</option>
+        <option value="MEDIUM">Medium</option>
+        <option value="HIGH">High</option>
+        <option value="MISSION_CRITICAL">Mission-critical</option>
+      </select>
+      <div class="row-actions">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <button class="btn btn-ghost" type="reset">Clear</button>
+      </div>
+    </div>
+  </form>
+</article>
+        </section>
+      </main>
+{% endblock %}

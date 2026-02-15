@@ -83,6 +83,78 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
+# Display asset inventory and handle new asset record creation
+@app.route("/assets", methods=["GET", "POST"])
+def assets():
+    # Check if user is has logged in and immediately redirect to login page if false
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    error = None
+    success = None
+
+    # If POST request from add asset form submission
+    if request.method == "POST":
+        # Assign asset attributes to variables from form data
+        name = request.form.get("name", "").strip()
+        ip_address = request.form.get("ip_address", "").strip()
+        asset_type = request.form.get("asset_type", "")
+        exposure = request.form.get("exposure", "")
+        criticality = request.form.get("criticality", "")
+
+        # Basic validation
+        if not name or not ip_address:
+            error = "Name and/or IP address are required."
+        else:
+            # Attempt to access MySQL database
+            try:
+                # Initiate DB connection and cursor variables
+                conn = get_db_connection()
+                cur = conn.cursor()
+                # Assign SQL statement string variable
+                sql = """
+                INSERT INTO assets (name, ip_address, asset_type, exposure, criticality)
+                VALUES (%s, %s, %s, %s, %s)"""
+                # Execute asset INSERT query specifiying attributes
+                cur.execute(sql, (name, ip_address, asset_type, exposure, criticality))
+                # Commit changes to database
+                conn.commit()
+                # Gracefully close cursor and DB connection sessions
+                cur.close()
+                conn.close()
+                # Generate success message string to pass to html template
+                success = "Asset added successfully."
+            except Exception as e:
+                error = "Error adding asset: " + e
+
+    # Fetch assets to display on page each time is loads
+    try:
+        # Initiate DB connection and cursor variables
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Execute SQL statement to obtain all active assets by added date descending
+        cur.execute("SELECT * FROM assets WHERE retired = FALSE ORDER BY created_at DESC")
+        # Obtain full query output from curser and assign to variable
+        asset_list = cur.fetchall()
+        # Gracefully close cursor and DB connection sessions
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        # Create empty table for error handling
+        asset_list = []
+        error = "Database error: " + e
+
+    # Show asset list and pass assets dict, messages, user details to render page
+    return render_template(
+        "assets.html",
+        assets=asset_list,
+        error=error,
+        success=success,
+        username=session["username"],
+        role=session["role"]
+    )
+
 # Admin Account Seeding Form (ONE TIME USE FORM TO CREATE ADMIN CREDENTIALS)
 # @app.route("/admin_form")
 # def admin_form():
@@ -129,7 +201,6 @@ def logout():
 # Users Table Setup Form (ONE TIME USE ROUTE TO CREATE USERS TABLE)
 # @app.route("/setup_users_table")
 # def setup_users_table():
-
 #     # SQL statement to create the users table
 #     create_table_sql = """
 #     CREATE TABLE IF NOT EXISTS users (
@@ -142,7 +213,7 @@ def logout():
 #         # Initiate DB connection and cursor variables
 #         conn = get_db_connection()
 #         cur = conn.cursor()
-#         # Execute the CREATE TABLE statement
+#         # Execute the CREATE TABLE query
 #         cur.execute(create_table_sql)
 #         # Commit the change to database
 #         conn.commit()
