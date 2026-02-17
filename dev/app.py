@@ -155,6 +155,58 @@ def assets():
         role=session["role"]
     )
 
+@app.route("/assets/<int:asset_id>")
+
+def asset_detail(asset_id):
+    # Check if user is has logged in and immediately redirect to login page if false
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Fetch one asset by primary key
+        cur.execute("SELECT * FROM assets WHERE asset_id = %s", (asset_id,))
+        asset = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        # If no asset found, return 404
+        if asset is None:
+            return "Asset not found", 404
+
+        return render_template(
+            "asset_detail.html",
+            asset=asset,
+            username=session["username"],
+            role=session["role"])
+
+    except Exception as e:
+        return f"Error loading asset: " + e
+
+@app.route("/assets/<int:asset_id>/retire", methods=["POST"])
+
+def retire_asset(asset_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Mark asset as retired
+        cur.execute("UPDATE assets SET retired = TRUE WHERE asset_id = %s", (asset_id,))
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        # After retiring, send user back to assets list
+        return redirect(url_for("assets"))
+
+    except Exception as e:
+        return f"Error retiring asset: " + e
+    
 # Admin Account Seeding Form (ONE TIME USE FORM TO CREATE ADMIN CREDENTIALS)
 # @app.route("/admin_form")
 # def admin_form():

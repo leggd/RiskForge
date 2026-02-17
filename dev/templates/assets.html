@@ -48,7 +48,9 @@
                     <tbody>
                     {% for asset in assets %}
                     <tr>
-                        <td>{{ asset.name }}</td>
+                        <td>
+                        <a href="{{ url_for('asset_detail', asset_id=asset.asset_id) }}">
+                            {{ asset.name }} </a> </td>
                         <td>{{ asset.ip_address }}</td>
                         <td>{{ asset.asset_type.replace("_", " ").title() }}</td>
                         <td>{{ asset.exposure }}</td>

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Riskforge — Asset{% endblock %}
+{% block page_h1 %}Asset{% endblock %}
+{% block page_subtitle %}Asset details{% endblock %}
+
+{% block content %}
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h2>{{ asset.name }}</h2>
+        <p>{{ asset.ip_address }} • {{ asset.exposure }} • {{ asset.asset_type.replace("_"," ").title() }}</p>
+      </div>
+      <span class="badge">{{ asset.criticality.replace("_"," ").title() }}</span>
+    </div>
+
+    <div style="padding: 0 16px 16px;">
+      <p class="cell-sub">Last scanned: {{ asset.last_scanned_at if asset.last_scanned_at else "Never" }}</p>
+
+      <div class="row-actions" style="margin-top: 16px;">
+        <a class="btn btn-ghost" href="{{ url_for('assets') }}">Back to assets</a>
+
+        <!-- POST form for retire (safer than a GET link) -->
+        <form method="POST" action="{{ url_for('retire_asset', asset_id=asset.asset_id) }}" style="display:inline;">
+          <button class="btn btn-danger" type="submit"
+            onclick="return confirm('Retire this asset? It will be hidden from active inventory.');">
+            Retire asset
+          </button>
+        </form>
+      </div>
+    </div>
+  </article>
+{% endblock %}
