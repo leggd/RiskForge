@@ -124,7 +124,6 @@ def dashboard():
 def logout():
     # Clear session to require login for dashboard access
     session.clear()
-    log_event[]
     return redirect(url_for("login"))
 
 # Display asset inventory and handle new asset record creation
