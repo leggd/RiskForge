@@ -12,6 +12,46 @@ app = Flask(__name__)
 
 # Secret key for session management
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+"""
+Inserts an entry into the audit_log table.
+
+Parameters:
+    user_id     -> ID of the user performing the action
+    action      -> String describing the action (e.g. 'CREATE_ASSET')
+    entity_type -> Type of entity affected (e.g. 'ASSET', 'USER')
+    entity_id   -> Optional ID of the affected entity
+    details     -> Optional descriptive text
+"""
+def log_event(user_id, action, entity_type, entity_id=None, details=None):
+    try:
+        # Get client IP address from request
+        ip_address = request.remote_addr
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        sql = """
+        INSERT INTO audit_log (user_id, action, entity_type, entity_id, details, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        """
+
+        cur.execute(sql, (
+            user_id,
+            action,
+            entity_type,
+            entity_id,
+            details,
+            ip_address
+        ))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        # Do NOT crash the app if logging fails
+        print(f"AUDIT LOG ERROR: {e}")
 
 # Create and return a MySQL connection
 def get_db_connection():
@@ -48,6 +88,7 @@ def login():
             # If user does not exist
             if user is None:
                 error = "User does not exist, contact your Administrator"
+                log_event(None,"LOGIN_FAILED","USER",None,f"Attempted login with unknown username: '{username}'")
             else:
                 # Encode entered password for bcrypt comparison
                 password_bytes = password.encode("utf-8")
@@ -59,9 +100,11 @@ def login():
                     session["user_id"] = user["user_id"]
                     session["username"] = user["username"]
                     session["role"] = user["role"]
+                    log_event(user["user_id"],"LOGIN_SUCCESS","USER",None,f"User: {user["username"]} logged in successfully.")
                     return redirect(url_for("dashboard"))
                 else:
                     error = "Incorrect username or password"
+                    log_event(user["user_id"],"LOGIN_FAILED","USER",None,f"User: {user["username"]} attempted login with incorrect password.")
         # Catch error and display on webpage as error if DB connection issue
         except Exception as e:
             error = e
@@ -81,6 +124,7 @@ def dashboard():
 def logout():
     # Clear session to require login for dashboard access
     session.clear()
+    log_event[]
     return redirect(url_for("login"))
 
 # Display asset inventory and handle new asset record creation
@@ -156,7 +200,6 @@ def assets():
     )
 
 @app.route("/assets/<int:asset_id>")
-
 def asset_detail(asset_id):
     # Check if user is has logged in and immediately redirect to login page if false
     if "user_id" not in session:
@@ -186,7 +229,6 @@ def asset_detail(asset_id):
         return f"Error loading asset: " + e
 
 @app.route("/assets/<int:asset_id>/retire", methods=["POST"])
-
 def retire_asset(asset_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
@@ -206,76 +248,6 @@ def retire_asset(asset_id):
 
     except Exception as e:
         return f"Error retiring asset: " + e
-    
-# Admin Account Seeding Form (ONE TIME USE FORM TO CREATE ADMIN CREDENTIALS)
-# @app.route("/admin_form")
-# def admin_form():
-#     return """
-#     <form method="POST" action="/seed_admin">
-#         <input name="username" placeholder="Username">
-#         <input name="password" type="password" placeholder="Password">
-#         <button type="submit">Create Admin</button>
-#     </form>
-#     """
-
-# Temporary Admin Seed Route (ONE TIME USE FUNCTION TO INSERT ADMIN RECORD INTO DB)
-# @app.route("/seed_admin", methods=["POST"])
-# def seed_admin():
-#     # Retrieve username and password from admin seed form data
-#     username = request.form.get("username", "").strip()
-#     password = request.form.get("password", "")
-#     try:
-#         # Encode entered password for bcrypt operations
-#         password_bytes = password.encode("utf-8")
-#         # Generate password hash from entered password with salt
-#         password_hash = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
-#         # Decode hash back to string for storing in DB
-#         password_hash_str = password_hash.decode("utf-8")
-#         # Initiate DB connection and cursor variables
-#         conn = get_db_connection()
-#         cur = conn.cursor()
-#         # SQL query variable assigned as string
-#         sql = """
-#         INSERT INTO users (username, password_hash, role)
-#         VALUES (%s, %s, 'ADMIN');
-#         """
-#         # Execute query specifiying username and password hash for %s
-#         cur.execute(sql, (username, password_hash_str))
-#         # Commit changes to database
-#         conn.commit()
-#         # Gracefully close cursor and DB connection sessions
-#         cur.close()
-#         conn.close()
-
-#     except Exception as e:
-#         return "Error: " + e
-
-# Users Table Setup Form (ONE TIME USE ROUTE TO CREATE USERS TABLE)
-# @app.route("/setup_users_table")
-# def setup_users_table():
-#     # SQL statement to create the users table
-#     create_table_sql = """
-#     CREATE TABLE IF NOT EXISTS users (
-#         user_id INT AUTO_INCREMENT PRIMARY KEY,
-#         username VARCHAR(50) NOT NULL UNIQUE,
-#         password_hash VARCHAR(255) NOT NULL,
-#         role ENUM('ADMIN', 'VIEWER') NOT NULL DEFAULT 'VIEWER',
-#         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"""
-#     try:
-#         # Initiate DB connection and cursor variables
-#         conn = get_db_connection()
-#         cur = conn.cursor()
-#         # Execute the CREATE TABLE query
-#         cur.execute(create_table_sql)
-#         # Commit the change to database
-#         conn.commit()
-#         # Gracefully close cursor and DB connection sessions
-#         cur.close()
-#         conn.close()
-#         return "Users table created"
-
-#     except Exception as e:
-#         return "Error" + e
 
 # Run Server
 if __name__ == "__main__":
