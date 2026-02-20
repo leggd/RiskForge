@@ -1,32 +1,74 @@
 {% extends "base.html" %}
-{% block title %}Riskforge — Asset{% endblock %}
-{% block page_h1 %}Asset{% endblock %}
-{% block page_subtitle %}Asset details{% endblock %}
+
+{% block title %}Riskforge — Asset Detail{% endblock %}
+{% block page_h1 %}Asset Detail{% endblock %}
+{% block page_subtitle %}View and edit asset{% endblock %}
 
 {% block content %}
-  <article class="card">
-    <div class="card-head">
-      <div>
-        <h2>{{ asset.name }}</h2>
-        <p>{{ asset.ip_address }} • {{ asset.exposure }} • {{ asset.asset_type.replace("_"," ").title() }}</p>
-      </div>
-      <span class="badge">{{ asset.criticality.replace("_"," ").title() }}</span>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>{{ asset.name }}</h2>
+      <p>{{ asset.ip_address }}</p>
     </div>
 
+    {% if not edit_mode %}
+      <a class="btn btn-primary"
+         href="/assets/{{ asset.asset_id }}?edit=1">
+        Edit
+      </a>
+    {% endif %}
+  </div>
+
+  {% if edit_mode %}
+    <form method="POST" action="/assets/{{ asset.asset_id }}/update">
+      <div style="padding: 0 16px 16px;">
+        <label class="cell-sub">Asset name</label>
+        <input class="select" style="width:100%; margin:8px 0 12px;"
+               name="name" value="{{ asset.name }}" required>
+
+        <label class="cell-sub">IP address</label>
+        <input class="select" style="width:100%; margin:8px 0 12px;"
+               name="ip_address" value="{{ asset.ip_address }}" required>
+
+        <label class="cell-sub">Asset Type</label>
+        <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_type" required>
+          <option value="WEB_SERVER" {% if asset.asset_type == "WEB_SERVER" %}selected{% endif %}>Web Server</option>
+          <option value="FILE_SERVER" {% if asset.asset_type == "FILE_SERVER" %}selected{% endif %}>File Server</option>
+          <option value="DATABASE_SERVER" {% if asset.asset_type == "DATABASE_SERVER" %}selected{% endif %}>Database Server</option>
+          <option value="WORKSTATION" {% if asset.asset_type == "WORKSTATION" %}selected{% endif %}>Workstation</option>
+          <option value="OTHER" {% if asset.asset_type == "OTHER" %}selected{% endif %}>Other</option>
+        </select>
+
+        <label class="cell-sub">Exposure</label>
+        <select class="select" style="width:100%; margin:8px 0 12px;" name="exposure" required>
+          <option value="PUBLIC" {% if asset.exposure == "PUBLIC" %}selected{% endif %}>Public</option>
+          <option value="PRIVATE" {% if asset.exposure == "PRIVATE" %}selected{% endif %}>Private</option>
+        </select>
+
+        <label class="cell-sub">Criticality</label>
+        <select class="select" style="width:100%; margin:8px 0 16px;" name="criticality" required>
+          <option value="LOW" {% if asset.criticality == "LOW" %}selected{% endif %}>Low</option>
+          <option value="MEDIUM" {% if asset.criticality == "MEDIUM" %}selected{% endif %}>Medium</option>
+          <option value="HIGH" {% if asset.criticality == "HIGH" %}selected{% endif %}>High</option>
+          <option value="MISSION_CRITICAL" {% if asset.criticality == "MISSION_CRITICAL" %}selected{% endif %}>Mission-critical</option>
+        </select>
+
+        <div class="row-actions">
+          <button class="btn btn-primary" type="submit">Save</button>
+          <a class="btn btn-ghost" href="/assets/{{ asset.asset_id }}"> Cancel</a>
+        </div>
+    </form>
+  {% else %}
     <div style="padding: 0 16px 16px;">
-      <p class="cell-sub">Last scanned: {{ asset.last_scanned_at if asset.last_scanned_at else "Never" }}</p>
-
-      <div class="row-actions" style="margin-top: 16px;">
-        <a class="btn btn-ghost" href="{{ url_for('assets') }}">Back to assets</a>
-
-        <!-- POST form for retire (safer than a GET link) -->
-        <form method="POST" action="{{ url_for('retire_asset', asset_id=asset.asset_id) }}" style="display:inline;">
-          <button class="btn btn-danger" type="submit"
-            onclick="return confirm('Retire this asset? It will be hidden from active inventory.');">
-            Retire asset
-          </button>
-        </form>
-      </div>
+      <p><b>Type:</b> {{ asset.asset_type }}</p>
+      <p><b>Exposure:</b> {{ asset.exposure }}</p>
+      <p><b>Criticality:</b> {{ asset.criticality }}</p>
+      <p><b>Last scanned:</b> {{ asset.last_scanned_at if asset.last_scanned_at else "Never" }}</p>
     </div>
-  </article>
+  {% endif %}
+
+</div>
+
 {% endblock %}

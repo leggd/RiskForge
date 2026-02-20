@@ -3,6 +3,7 @@ from flask import Flask, request, redirect, url_for, session, render_template
 import pymysql
 from dotenv import load_dotenv
 import bcrypt
+from pymysql.err import IntegrityError
 
 # Load environment variables
 load_dotenv()
@@ -100,11 +101,11 @@ def login():
                     session["user_id"] = user["user_id"]
                     session["username"] = user["username"]
                     session["role"] = user["role"]
-                    log_event(user["user_id"],"LOGIN_SUCCESS","USER",None,f"User: {user["username"]} logged in successfully.")
+                    log_event(user["user_id"],"LOGIN_SUCCESS","USER",None,f"User: {username} logged in successfully.")
                     return redirect(url_for("dashboard"))
                 else:
                     error = "Incorrect username or password"
-                    log_event(user["user_id"],"LOGIN_FAILED","USER",None,f"User: {user["username"]} attempted login with incorrect password.")
+                    log_event(user["user_id"],"LOGIN_FAILED","USER",None,f"User: {username} attempted login with incorrect password.")
         # Catch error and display on webpage as error if DB connection issue
         except Exception as e:
             error = e
@@ -198,34 +199,89 @@ def assets():
         role=session["role"]
     )
 
-@app.route("/assets/<int:asset_id>")
+@app.route("/assets/<int:asset_id>", methods=["GET"])
 def asset_detail(asset_id):
-    # Check if user is has logged in and immediately redirect to login page if false
     if "user_id" not in session:
         return redirect(url_for("login"))
+
+    edit_mode = request.args.get("edit") == "1"
+
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Fetch one asset by primary key
         cur.execute("SELECT * FROM assets WHERE asset_id = %s", (asset_id,))
         asset = cur.fetchone()
 
         cur.close()
         conn.close()
 
-        # If no asset found, return 404
         if asset is None:
             return "Asset not found", 404
 
         return render_template(
             "asset_detail.html",
             asset=asset,
+            edit_mode=edit_mode,
             username=session["username"],
-            role=session["role"])
+            role=session["role"]
+        )
 
     except Exception as e:
-        return f"Error loading asset: " + e
+        return "Error loading asset: " + str(e)
+
+@app.route("/assets/<int:asset_id>/update", methods=["POST"])
+def update_asset(asset_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    # Optional: only admins can edit assets
+    # if session.get("role") != "ADMIN":
+    #     return "Forbidden", 403
+
+    name = request.form.get("name", "").strip()
+    ip_address = request.form.get("ip_address", "").strip()
+    asset_type = request.form.get("asset_type", "")
+    exposure = request.form.get("exposure", "")
+    criticality = request.form.get("criticality", "")
+
+    # Basic validation
+    if not name or not ip_address:
+        return redirect(url_for("asset_detail", asset_id=asset_id) + "?edit=1")
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        sql = """
+        UPDATE assets
+        SET name=%s, ip_address=%s, asset_type=%s, exposure=%s, criticality=%s
+        WHERE asset_id=%s
+        """
+        cur.execute(sql, (name, ip_address, asset_type, exposure, criticality, asset_id))
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        # Audit log (recommended)
+        log_event(
+            session["user_id"],
+            "UPDATE_ASSET",
+            "ASSET",
+            asset_id,
+            f"Updated asset to name={name}, ip={ip_address}, type={asset_type}, exposure={exposure}, criticality={criticality}"
+        )
+
+        # Back to read-only view
+        return redirect(url_for("asset_detail", asset_id=asset_id))
+
+    except IntegrityError:
+        # This will catch duplicate IP address because ip_address is UNIQUE :contentReference[oaicite:1]{index=1}
+        return redirect(url_for("asset_detail", asset_id=asset_id) + "?edit=1&err=duplicate_ip")
+
+    except Exception as e:
+        return "Error updating asset: " + str(e)
 
 @app.route("/assets/<int:asset_id>/retire", methods=["POST"])
 def retire_asset(asset_id):
