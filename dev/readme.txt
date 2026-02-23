@@ -1,211 +1,311 @@
-# Riskforge – Ubuntu Server Deployment Guide
+DEPLOYMENT_GUIDE.txt
 
-This guide explains how to deploy the Riskforge development build
-to an Ubuntu Server (22.04 recommended).
+Everything is step-by-step, assuming:
 
----
+Ubuntu Server = RiskForge
 
-note: There is already a database created 'riskforge_dev', username: 'riskforge_dev' and password: 'dbadmin' this is just if you want to recreate it in your own environment
+Kali Linux = GVM
 
-## 1. System Requirements
+Same internal network
 
-- Ubuntu Server 22.04
-- Python 3.10+
-- MySQL Server
-- Git
+No prior experience
 
----
+RISKFORGE FULL DEPLOYMENT GUIDE
+Ubuntu Server (RiskForge) + Kali Linux (GVM)
+ARCHITECTURE OVERVIEW
 
-## 2. Install Required System Packages
+You need TWO machines:
+
+Ubuntu Server 22.04 → Runs RiskForge Flask application
+
+Kali Linux → Runs GVM (Greenbone Vulnerability Manager)
+
+Both machines MUST:
+
+Be on the same network (e.g. 10.0.96.x)
+
+Be able to ping each other
+
+=====================================================================
+PART 1 — SETUP KALI LINUX (GVM SERVER)
+
+Login to Kali.
 
 Update system:
 
-```bash
-sudo apt update && sudo apt upgrade -y
+sudo apt update
+sudo apt upgrade -y
 
-Install Python and MySQL:
+Install GVM:
+
+sudo apt install gvm -y
+
+Run initial setup (this takes time):
+
+sudo gvm-setup
+
+IMPORTANT:
+At the end it will show:
+
+Admin username
+
+Admin password
+
+SAVE THESE. YOU NEED THEM FOR RISKFORGE.
+
+Start GVM:
+
+sudo gvm-start
+
+Check everything is OK:
+
+sudo gvm-check-setup
+
+All checks should say OK.
+
+Allow GVM to listen on network (not just localhost):
+
+Edit config:
+
+sudo nano /etc/gvm/gsad.conf
+
+Find:
+--listen=127.0.0.1
+
+Change to:
+--listen=0.0.0.0
+
+Save file.
+
+Restart GVM:
+
+sudo gvm-stop
+sudo gvm-start
+
+Get Kali IP address:
+
+ip a
+
+Look for something like:
+inet 10.0.96.32
+
+WRITE THIS DOWN.
+This is your GVM IP.
+
+GVM should now be running on:
+
+10.0.96.32:9390
+
+=====================================================================
+PART 2 — SETUP UBUNTU SERVER (RISKFORGE)
+
+Login to Ubuntu server.
+
+Update system:
+
+sudo apt update
+sudo apt upgrade -y
+
+Install required software:
 
 sudo apt install python3 python3-venv python3-pip mysql-server git -y
 
-3. Clone the Repository
-git clone <your-repo-url>
-cd riskforge
+Secure MySQL:
 
-4. Create Python Virtual Environment
+sudo mysql_secure_installation
+
+Set a root password.
+
+Create database and user:
+
+sudo mysql -u root -p
+
+Inside MySQL:
+
+CREATE DATABASE riskforge;
+
+CREATE USER 'riskforge_user'@'localhost' IDENTIFIED BY 'password123';
+
+GRANT ALL PRIVILEGES ON riskforge.* TO 'riskforge_user'@'localhost';
+
+FLUSH PRIVILEGES;
+
+EXIT;
+
+Import your database schema:
+
+sudo mysql -u root -p
+USE riskforge;
+
+Now paste your full schema SQL (users, assets, audit_log, scans).
+
+EXIT;
+
+Create project directory:
+
+sudo mkdir -p /opt/riskforge
+sudo chown $USER:$USER /opt/riskforge
+cd /opt/riskforge
+
+Clone project:
+
+git clone https://github.com/leggd/RiskForge.git
+ .
+cd dev
+
+Create Python virtual environment:
+
 python3 -m venv venv
 source venv/bin/activate
 
-5. Install Python Dependencies
-pip install -r requirements.txt
+Install dependencies:
 
-6. Configure Environment Variables
-Create a .env file in the project root:
+pip install flask pymysql python-dotenv bcrypt gvm-tools cryptography
+
+Create .env file:
 
 nano .env
 
-Example .env file:
-SECRET_KEY=change_this_to_a_random_secure_string
-DB_HOST=127.0.0.1
+Paste:
+
+SECRET_KEY=supersecretkey123
+DB_HOST=localhost
 DB_USER=riskforge_user
-DB_PASSWORD=strongpassword
+DB_PASSWORD=password123
 DB_NAME=riskforge
 DB_PORT=3306
-Save and exit.
 
-⚠ Do NOT commit .env to Git.
+Save file.
 
-7. Setup MySQL Database
-Login to MySQL:
+Configure GVM connection in app.py
 
-sudo mysql
-Create database and user:
+nano app.py
 
-CREATE DATABASE riskforge;
+Find:
 
-CREATE USER 'riskforge_user'@'localhost' IDENTIFIED BY 'strongpassword';
+HOST = "10.0.96.32"
+USERNAME = "admin"
+PASSWORD = "your_password_here"
 
-GRANT ALL PRIVILEGES ON riskforge.* TO 'riskforge_user'@'localhost';
+Replace:
 
-FLUSH PRIVILEGES;
-EXIT;
+HOST with Kali IP
 
-8. Create Users Table
-Start Flask temporarily:
+USERNAME and PASSWORD with values from gvm-setup
 
-python app.py
+Save file.
 
-Visit in browser:
+Create admin user
 
-http://<server-ip>:5000/setup_users_table
-Then create admin user:
+Activate venv if not already:
 
-http://<server-ip>:5000/seed_admin
-After admin is created, remove or comment out those routes.
+source venv/bin/activate
 
-9. Run Application (Development Mode)
-python app.py
-Application will run on:
+Start Python:
 
-http://<server-ip>:5000
-10. Production (Recommended)
-For production, use Gunicorn:
+python3
 
-Install:
-
-pip install gunicorn
 Run:
 
-gunicorn -w 4 -b 0.0.0.0:8000 app:app
-Access via:
+import bcrypt
+print(bcrypt.hashpw("admin123".encode(), bcrypt.gensalt()).decode())
 
-http://<server-ip>:8000
-For full production setup, use:
+Copy the output hash.
 
-Nginx reverse proxy
+Exit Python.
 
-HTTPS (Let's Encrypt)
+Now insert into MySQL:
 
-Systemd service
+sudo mysql -u root -p
+USE riskforge;
 
-Security Notes
-Remove /setup_users_table and /seed_admin routes after use.
+INSERT INTO users (username, password_hash, role)
+VALUES ('admin', 'PASTE_HASH_HERE', 'ADMIN');
 
-Never expose development mode publicly.
-
-Ensure firewall allows required ports only.
-
-Always use strong SECRET_KEY and database password.
-
-© Riskforge Enterprise Project
-
-
----
-
-# Example `.env.example` (Commit This One)
-
-Create a file called:
-# Riskforge – Ubuntu Server Deployment Guide
-
-This guide explains how to deploy the Riskforge development build
-to an Ubuntu Server (22.04 recommended).
-
----
-
-## 1. System Requirements
-
-- Ubuntu Server 22.04
-- Python 3.10+
-- MySQL Server
-- Git
-
----
-
-## 2. Install Required System Packages
-
-Update system:
-
-```bash
-sudo apt update && sudo apt upgrade -y
-Install Python and MySQL:
-
-sudo apt install python3 python3-venv python3-pip mysql-server git -y
-3. Clone the Repository
-git clone <your-repo-url>
-cd riskforge
-4. Create Python Virtual Environment
-python3 -m venv venv
-source venv/bin/activate
-5. Install Python Dependencies
-pip install -r requirements.txt
-6. Configure Environment Variables
-Create a .env file in the project root:
-
-nano .env
-Example .env file:
-
-SECRET_KEY=your_secret_key_here
-DB_HOST=127.0.0.1
-DB_USER=riskforge_dev
-DB_PASSWORD=dbadmin
-DB_NAME=riskforge_dev
-DB_PORT=3306
-
-Save and exit.
-
-⚠ Do NOT commit .env to Git.
-
-7. Setup MySQL Database
-Login to MySQL:
-
-sudo mysql
-Create database and user:
-
-CREATE DATABASE riskforge;
-
-CREATE USER 'riskforge_user'@'localhost' IDENTIFIED BY 'strongpassword';
-
-GRANT ALL PRIVILEGES ON riskforge.* TO 'riskforge_user'@'localhost';
-
-FLUSH PRIVILEGES;
 EXIT;
 
-8. Create Users Table
-Start Flask temporarily:
+=====================================================================
+PART 3 — RUN RISKFORGE
 
-python app.py
-Visit in browser:
+Inside /opt/riskforge/dev:
 
-http://<server-ip>:5000/setup_users_table
-Then create admin user:
+source venv/bin/activate
+python3 app.py
 
-http://<server-ip>:5000/seed_admin
-After admin is created, remove or comment out those routes.
+You should see:
 
-9. Run Application (Development Mode)
-python app.py
+Running on http://0.0.0.0:5000
 
-Application will run on:
-http://<server-ip>:5000
+Open browser:
 
+http://<ubuntu_server_ip>:5000/login
 
+Login with:
 
+username: admin
+password: admin123
+
+=====================================================================
+PART 4 — TEST FULL SYSTEM
+
+Login
+
+Add an asset (e.g. metasploitable IP)
+
+Go to Scans
+
+Click Start Scan
+
+Refresh page
+
+Watch progress update
+
+When finished → Status becomes Done
+
+=====================================================================
+NETWORK TROUBLESHOOTING
+
+From Ubuntu server:
+
+ping <kali_ip>
+
+Test port:
+
+nc -zv <kali_ip> 9390
+
+If connection fails:
+
+Check firewall on Kali
+
+Check GVM running
+
+Check IP address
+
+=====================================================================
+OPTIONAL — RUN WITH GUNICORN (MORE PROFESSIONAL)
+
+Inside project folder:
+
+pip install gunicorn
+
+Run:
+
+gunicorn -w 3 -b 0.0.0.0:8000 app:app
+
+Access:
+
+http://<ubuntu_ip>:8000
+
+=====================================================================
+FINAL CHECKLIST
+
+[ ] Kali GVM installed and running
+[ ] Kali listening on 0.0.0.0
+[ ] Ubuntu can ping Kali
+[ ] MySQL database created
+[ ] Tables imported
+[ ] .env configured
+[ ] Admin user created
+[ ] GVM credentials correct
+[ ] Start Scan works
+[ ] Progress updates

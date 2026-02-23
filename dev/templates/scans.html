@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Riskforge — Scans{% endblock %}
+{% block page_h1 %}Scans{% endblock %}
+{% block page_subtitle %}Manage vulnerability scans{% endblock %}
+
+{% block content %}
+
+<section class="grid two-col">
+
+  <!-- LEFT SIDE: Scan Table -->
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h2>Scan History</h2>
+        <p>All initiated scans</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Started</th>
+            <th>Finished</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for scan in scans %}
+          <tr>
+            <td>{{ scan.asset_name }}</td>
+            <td>{{ scan.status }}</td>
+            <td>{{ scan.progress }}%</td>
+            <td>{{ scan.started_at }}</td>
+            <td>{{ scan.finished_at if scan.finished_at else "-" }}</td>
+          </tr>
+          {% endfor %}
+
+          {% if scans|length == 0 %}
+          <tr>
+            <td colspan="5" style="text-align:center;">
+              No scans yet.
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <!-- RIGHT SIDE: Start Scan Form -->
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h2>Start Scan</h2>
+        <p>Initiate scan for a single asset</p>
+      </div>
+    </div>
+
+    <form method="POST" action="/scans">
+      <div style="padding: 0 16px 16px;">
+        
+        <label class="cell-sub">Select Asset</label>
+        <select class="select" style="width:100%; margin:8px 0 16px;" name="asset_id" required>
+          {% for asset in assets %}
+            <option value="{{ asset.asset_id }}">
+              {{ asset.name }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <button class="btn btn-primary" type="submit">
+          Start Scan
+        </button>
+
+      </div>
+    </form>
+  </article>
+
+</section>
+
+{% endblock %}

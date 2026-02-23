@@ -4,6 +4,10 @@ import pymysql
 from dotenv import load_dotenv
 import bcrypt
 from pymysql.err import IntegrityError
+from gvm.connections import TLSConnection
+from gvm.protocols.gmp import GMP
+from gvm.transforms import EtreeCheckCommandTransform
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -64,6 +68,92 @@ def get_db_connection():
         port=int(os.getenv("DB_PORT")),
         cursorclass=pymysql.cursors.DictCursor)
 
+def start_gvm_scan(target_ip):
+    """
+    Starts a GVM scan for a single IP.
+    Returns: task_id, report_id (may be None)
+    """
+
+    HOST = "10.0.96.32"
+    PORT = 9390
+    USERNAME = "admin"
+    PASSWORD = "378d6918-4340-4cfe-95f7-3f084d826d5d"
+
+    SCAN_CONFIG_ID = "daba56c8-73ec-11df-a475-002264764cea"
+    PORT_LIST_ID   = "33d0cd82-57c6-11e1-8ed1-406186ea4fc5"
+    SCANNER_ID     = "08b69003-5fc2-4037-a479-93b440211c73"
+
+    connection = TLSConnection(hostname=HOST, port=PORT)
+    transform = EtreeCheckCommandTransform()
+
+    with GMP(connection=connection, transform=transform) as gmp:
+        gmp.authenticate(USERNAME, PASSWORD)
+
+        now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Create target
+        target_resp = gmp.create_target(
+            name="RiskForge Target " + target_ip + " " + now,
+            hosts=[target_ip],
+            port_list_id=PORT_LIST_ID
+        )
+        target_id = target_resp.get("id")
+
+        # Create task
+        task_resp = gmp.create_task(
+            name="RiskForge Task " + target_ip + " " + now,
+            config_id=SCAN_CONFIG_ID,
+            target_id=target_id,
+            scanner_id=SCANNER_ID
+        )
+        task_id = task_resp.get("id")
+
+        # Start task
+        gmp.start_task(task_id)
+
+        # Immediately try to get report ID
+        report_id = None
+
+        tasks_xml = gmp.get_tasks(filter_string="rows=500")
+        t = tasks_xml.find(".//task[@id='" + task_id + "']")
+        if t is not None:
+            current_report = t.find("./current_report/report")
+            if current_report is not None:
+                report_id = current_report.get("id")
+
+        return task_id, report_id
+def get_gvm_task_status(task_id):
+    """
+    Gets status and progress from GVM for a given task_id.
+    Returns: status_string, progress_int
+    """
+
+    HOST = "10.0.96.32"
+    PORT = 9390
+    USERNAME = "admin"
+    PASSWORD = "378d6918-4340-4cfe-95f7-3f084d826d5d"
+
+    connection = TLSConnection(hostname=HOST, port=PORT)
+    transform = EtreeCheckCommandTransform()
+
+    with GMP(connection=connection, transform=transform) as gmp:
+        gmp.authenticate(USERNAME, PASSWORD)
+
+        tasks_xml = gmp.get_tasks(filter_string="rows=500")
+        t = tasks_xml.find(".//task[@id='" + task_id + "']")
+
+        if t is None:
+            return "Unknown", 0
+
+        status = (t.findtext("./status") or "").strip()
+        progress = (t.findtext("./progress") or "0").strip()
+
+        try:
+            progress = int(progress)
+        except:
+            progress = 0
+
+        return status, progress
 # Login Route (If request isn't POST, it defaults to GET to show login page)
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -304,6 +394,159 @@ def retire_asset(asset_id):
     except Exception as e:
         return f"Error retiring asset: " + e
 
+@app.route("/scans", methods=["GET", "POST"])
+def scans():
+
+    # ----------------------------------
+    # REQUIRE LOGIN
+    # ----------------------------------
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    # ----------------------------------
+    # HANDLE NEW SCAN REQUEST (POST)
+    # ----------------------------------
+    if request.method == "POST":
+        asset_id = request.form.get("asset_id")
+
+        if asset_id:
+            try:
+                conn = get_db_connection()
+                cur = conn.cursor()
+
+                # Get IP address for selected asset
+                cur.execute("SELECT ip_address FROM assets WHERE asset_id = %s", (asset_id,))
+                asset = cur.fetchone()
+
+                if asset is None:
+                    raise Exception("Asset not found")
+
+                target_ip = asset["ip_address"]
+
+                # Start real GVM scan
+                task_id, report_id = start_gvm_scan(target_ip)
+
+                # Insert new scan record
+                cur.execute("""
+                    INSERT INTO scans 
+                    (asset_id, started_by, gvm_task_id, gvm_report_id, status, progress)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    asset_id,
+                    session["user_id"],
+                    task_id,
+                    report_id,
+                    "Requested",   # Start as Requested (GVM will update)
+                    0
+                ))
+
+                conn.commit()
+                cur.close()
+                conn.close()
+
+            except Exception as e:
+                print("Error starting real scan:", e)
+
+    # ----------------------------------
+    # UPDATE SCAN PROGRESS FROM GVM
+    # ----------------------------------
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Get ALL scans
+        cur.execute("SELECT scan_id, gvm_task_id, status FROM scans")
+        all_scans = cur.fetchall()
+
+        FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
+
+        for scan in all_scans:
+
+            scan_id = scan["scan_id"]
+            task_id = scan["gvm_task_id"]
+            current_status = scan["status"]
+
+            # Skip already finished scans
+            if current_status in FINISHED_STATES:
+                continue
+
+            # Ask GVM for latest status
+            status, progress = get_gvm_task_status(task_id)
+
+            print("Updating scan:", scan_id, "| GVM status:", status, "| Progress:", progress)
+
+            # If finished, set finished_at
+            if status in FINISHED_STATES:
+                cur.execute("""
+                    UPDATE scans
+                    SET status=%s, progress=%s, finished_at=NOW()
+                    WHERE scan_id=%s
+                """, (status, progress, scan_id))
+            else:
+                cur.execute("""
+                    UPDATE scans
+                    SET status=%s, progress=%s
+                    WHERE scan_id=%s
+                """, (status, progress, scan_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        print("Error updating scan progress:", e)
+
+    # ----------------------------------
+    # LOAD SCAN LIST FOR DISPLAY
+    # ----------------------------------
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT 
+                scans.scan_id,
+                scans.status,
+                scans.progress,
+                scans.started_at,
+                scans.finished_at,
+                assets.name AS asset_name,
+                assets.ip_address
+            FROM scans
+            JOIN assets ON scans.asset_id = assets.asset_id
+            ORDER BY scans.started_at DESC
+        """)
+
+        scan_list = cur.fetchall()
+
+        # Load active assets for dropdown
+        cur.execute("""
+            SELECT asset_id, name 
+            FROM assets 
+            WHERE retired = FALSE 
+            ORDER BY name ASC
+        """)
+
+        asset_list = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        scan_list = []
+        asset_list = []
+        print("Error loading scans:", e)
+
+    # ----------------------------------
+    # RENDER PAGE
+    # ----------------------------------
+    return render_template(
+        "scans.html",
+        scans=scan_list,
+        assets=asset_list,
+        username=session["username"],
+        role=session["role"]
+    )
 # Run Server
 if __name__ == "__main__":
     app.run(debug=True)

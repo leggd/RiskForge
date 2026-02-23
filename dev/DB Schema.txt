@@ -1,0 +1,164 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Feb 23, 2026 at 12:27 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+--
+-- Database: `riskforge`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `assets`
+--
+
+CREATE TABLE `assets` (
+  `asset_id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `ip_address` varchar(45) NOT NULL,
+  `asset_type` enum('WEB_SERVER','FILE_SERVER','DATABASE_SERVER','APPLICATION_SERVER','WORKSTATION','NETWORK_DEVICE','OTHER') NOT NULL,
+  `exposure` enum('PUBLIC','PRIVATE') NOT NULL,
+  `criticality` enum('LOW','MEDIUM','HIGH','MISSION_CRITICAL') NOT NULL,
+  `last_scanned_at` datetime DEFAULT NULL,
+  `retired` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `audit_log`
+--
+
+CREATE TABLE `audit_log` (
+  `audit_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `action` varchar(100) NOT NULL,
+  `entity_type` varchar(50) NOT NULL,
+  `entity_id` int(11) DEFAULT NULL,
+  `details` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `scans`
+--
+
+CREATE TABLE `scans` (
+  `scan_id` int(11) NOT NULL,
+  `asset_id` int(11) NOT NULL,
+  `started_by` int(11) NOT NULL,
+  `gvm_task_id` varchar(100) NOT NULL,
+  `gvm_report_id` varchar(100) DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'Requested',
+  `progress` int(11) NOT NULL DEFAULT 0,
+  `started_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `finished_at` datetime DEFAULT NULL,
+  `error_message` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `user_id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `role` enum('ADMIN','VIEWER') NOT NULL DEFAULT 'VIEWER',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `assets`
+--
+ALTER TABLE `assets`
+  ADD PRIMARY KEY (`asset_id`),
+  ADD UNIQUE KEY `ip_address` (`ip_address`);
+
+--
+-- Indexes for table `audit_log`
+--
+ALTER TABLE `audit_log`
+  ADD PRIMARY KEY (`audit_id`),
+  ADD KEY `fk_audit_user` (`user_id`);
+
+--
+-- Indexes for table `scans`
+--
+ALTER TABLE `scans`
+  ADD PRIMARY KEY (`scan_id`),
+  ADD KEY `fk_scan_asset` (`asset_id`),
+  ADD KEY `fk_scan_user` (`started_by`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`user_id`),
+  ADD UNIQUE KEY `username` (`username`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `assets`
+--
+ALTER TABLE `assets`
+  MODIFY `asset_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `audit_log`
+--
+ALTER TABLE `audit_log`
+  MODIFY `audit_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `scans`
+--
+ALTER TABLE `scans`
+  MODIFY `scan_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `audit_log`
+--
+ALTER TABLE `audit_log`
+  ADD CONSTRAINT `fk_audit_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `scans`
+--
+ALTER TABLE `scans`
+  ADD CONSTRAINT `fk_scan_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`asset_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_scan_user` FOREIGN KEY (`started_by`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+COMMIT;
