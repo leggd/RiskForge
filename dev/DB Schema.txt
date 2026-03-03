@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 23, 2026 at 12:27 PM
+-- Generation Time: Mar 03, 2026 at 12:07 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -61,13 +61,34 @@ CREATE TABLE `scans` (
   `scan_id` int(11) NOT NULL,
   `asset_id` int(11) NOT NULL,
   `started_by` int(11) NOT NULL,
-  `gvm_task_id` varchar(100) NOT NULL,
+  `gvm_task_id` varchar(100) DEFAULT NULL,
   `gvm_report_id` varchar(100) DEFAULT NULL,
   `status` varchar(50) NOT NULL DEFAULT 'Requested',
   `progress` int(11) NOT NULL DEFAULT 0,
   `started_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `finished_at` datetime DEFAULT NULL,
-  `error_message` text DEFAULT NULL
+  `error_message` text DEFAULT NULL,
+  `engine` varchar(20) DEFAULT 'GVM',
+  `scanner_output` longtext DEFAULT NULL,
+  `ai_verdict` longtext DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tickets`
+--
+
+CREATE TABLE `tickets` (
+  `ticket_id` int(11) NOT NULL,
+  `asset_id` int(11) NOT NULL,
+  `scan_id` int(11) DEFAULT NULL,
+  `created_by` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'Open',
+  `priority` varchar(20) NOT NULL DEFAULT 'Medium',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -111,6 +132,15 @@ ALTER TABLE `scans`
   ADD KEY `fk_scan_user` (`started_by`);
 
 --
+-- Indexes for table `tickets`
+--
+ALTER TABLE `tickets`
+  ADD PRIMARY KEY (`ticket_id`),
+  ADD KEY `asset_id` (`asset_id`),
+  ADD KEY `scan_id` (`scan_id`),
+  ADD KEY `created_by` (`created_by`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -140,6 +170,12 @@ ALTER TABLE `scans`
   MODIFY `scan_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `tickets`
+--
+ALTER TABLE `tickets`
+  MODIFY `ticket_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
@@ -161,4 +197,12 @@ ALTER TABLE `audit_log`
 ALTER TABLE `scans`
   ADD CONSTRAINT `fk_scan_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`asset_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_scan_user` FOREIGN KEY (`started_by`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `tickets`
+--
+ALTER TABLE `tickets`
+  ADD CONSTRAINT `tickets_ibfk_1` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`asset_id`),
+  ADD CONSTRAINT `tickets_ibfk_2` FOREIGN KEY (`scan_id`) REFERENCES `scans` (`scan_id`),
+  ADD CONSTRAINT `tickets_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`);
 COMMIT;

@@ -4,62 +4,24 @@ import pymysql
 from dotenv import load_dotenv
 import bcrypt
 from pymysql.err import IntegrityError
-from gvm.connections import TLSConnection
-from gvm.protocols.gmp import GMP
-from gvm.transforms import EtreeCheckCommandTransform
-from datetime import datetime
+from services.gvm_service import start_gvm_scan, get_gvm_task_status
+from services.remote_scanner import run_ai_scan
+import json
+import datetime
 
-# Load environment variables
+# Load environment variables for DB details, api keys etc
 load_dotenv()
 
-# Initiate Flask object
+# Initiate Flask application object
 app = Flask(__name__)
 
-# Secret key for session management
+# Set flask secret key for secure signed in sessions
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-"""
-Inserts an entry into the audit_log table.
 
-Parameters:
-    user_id     -> ID of the user performing the action
-    action      -> String describing the action (e.g. 'CREATE_ASSET')
-    entity_type -> Type of entity affected (e.g. 'ASSET', 'USER')
-    entity_id   -> Optional ID of the affected entity
-    details     -> Optional descriptive text
-"""
-def log_event(user_id, action, entity_type, entity_id=None, details=None):
-    try:
-        # Get client IP address from request
-        ip_address = request.remote_addr
-
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        sql = """
-        INSERT INTO audit_log (user_id, action, entity_type, entity_id, details, ip_address)
-        VALUES (%s, %s, %s, %s, %s, %s)
-        """
-
-        cur.execute(sql, (
-            user_id,
-            action,
-            entity_type,
-            entity_id,
-            details,
-            ip_address
-        ))
-
-        conn.commit()
-
-        cur.close()
-        conn.close()
-
-    except Exception as e:
-        # Do NOT crash the app if logging fails
-        print(f"AUDIT LOG ERROR: {e}")
-
-# Create and return a MySQL connection
 def get_db_connection():
+    """
+    Creates and returns a MySQL connection using environment variables
+    """
     return pymysql.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
@@ -68,244 +30,260 @@ def get_db_connection():
         port=int(os.getenv("DB_PORT")),
         cursorclass=pymysql.cursors.DictCursor)
 
-def start_gvm_scan(target_ip):
+def log_event(user_id, action, entity_type, entity_id=None, details=None):
     """
-    Starts a GVM scan for a single IP.
-    Returns: task_id, report_id (may be None)
+    Inserts an entry into the audit_log table
     """
+    try:
+        ip_address = request.remote_addr
 
-    HOST = "10.0.96.32"
-    PORT = 9390
-    USERNAME = "admin"
-    PASSWORD = "378d6918-4340-4cfe-95f7-3f084d826d5d"
+        conn = get_db_connection()
+        cur = conn.cursor()
 
-    SCAN_CONFIG_ID = "daba56c8-73ec-11df-a475-002264764cea"
-    PORT_LIST_ID   = "33d0cd82-57c6-11e1-8ed1-406186ea4fc5"
-    SCANNER_ID     = "08b69003-5fc2-4037-a479-93b440211c73"
-
-    connection = TLSConnection(hostname=HOST, port=PORT)
-    transform = EtreeCheckCommandTransform()
-
-    with GMP(connection=connection, transform=transform) as gmp:
-        gmp.authenticate(USERNAME, PASSWORD)
-
-        now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-
-        # Create target
-        target_resp = gmp.create_target(
-            name="RiskForge Target " + target_ip + " " + now,
-            hosts=[target_ip],
-            port_list_id=PORT_LIST_ID
+        sql = """
+        INSERT INTO audit_log (
+        user_id, 
+        action, 
+        entity_type, 
+        entity_id, 
+        details, 
+        ip_address
         )
-        target_id = target_resp.get("id")
+        VALUES (%s, %s, %s, %s, %s, %s)
+        """
 
-        # Create task
-        task_resp = gmp.create_task(
-            name="RiskForge Task " + target_ip + " " + now,
-            config_id=SCAN_CONFIG_ID,
-            target_id=target_id,
-            scanner_id=SCANNER_ID
+        cur.execute(
+            sql,
+            (
+                user_id,
+                action,
+                entity_type,
+                entity_id,
+                details,
+                ip_address
+            )
         )
-        task_id = task_resp.get("id")
+        conn.commit()
+        
+        cur.close()
+        conn.close()
 
-        # Start task
-        gmp.start_task(task_id)
+    except Exception as e:
+        print("Audit Log Error:" + str(e))
 
-        # Immediately try to get report ID
-        report_id = None
-
-        tasks_xml = gmp.get_tasks(filter_string="rows=500")
-        t = tasks_xml.find(".//task[@id='" + task_id + "']")
-        if t is not None:
-            current_report = t.find("./current_report/report")
-            if current_report is not None:
-                report_id = current_report.get("id")
-
-        return task_id, report_id
-def get_gvm_task_status(task_id):
-    """
-    Gets status and progress from GVM for a given task_id.
-    Returns: status_string, progress_int
-    """
-
-    HOST = "10.0.96.32"
-    PORT = 9390
-    USERNAME = "admin"
-    PASSWORD = "378d6918-4340-4cfe-95f7-3f084d826d5d"
-
-    connection = TLSConnection(hostname=HOST, port=PORT)
-    transform = EtreeCheckCommandTransform()
-
-    with GMP(connection=connection, transform=transform) as gmp:
-        gmp.authenticate(USERNAME, PASSWORD)
-
-        tasks_xml = gmp.get_tasks(filter_string="rows=500")
-        t = tasks_xml.find(".//task[@id='" + task_id + "']")
-
-        if t is None:
-            return "Unknown", 0
-
-        status = (t.findtext("./status") or "").strip()
-        progress = (t.findtext("./progress") or "0").strip()
-
-        try:
-            progress = int(progress)
-        except:
-            progress = 0
-
-        return status, progress
-# Login Route (If request isn't POST, it defaults to GET to show login page)
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    """
+    Handles user authentication
+
+    On GET request it displays login form (base_public.html+login.html)
+    On POST request it obtains and validates submitted credentials,
+    verifies password hash and creates session if successful
+    """
     error = None
-    # If request is POST, process credentials
     if request.method == "POST":
-        # Assign username and password variable from form data
+        # Retrieve submitted credentials
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
-        # Attempt to access MySQL database
+        
         try:
-            # Initiate DB connection and cursor variables
             conn = get_db_connection()
             cur = conn.cursor()
-            # Parameterised SQL query to obtain record from usernae
-            cur.execute("SELECT * FROM users WHERE username = %s", (username,))
-            # Obtain user record from cursor and assign to user variable
+
+            # Obtain user record by entered username
+            cur.execute("SELECT * FROM users WHERE username = %s",(username,))
             user = cur.fetchone()
-            # Gracefully close cursor and DB connection sessions
+            
             cur.close()
             conn.close()
 
-            # If user does not exist
             if user is None:
+                # Log failed login attempt from unknown user + error message
                 error = "User does not exist, contact your Administrator"
-                log_event(None,"LOGIN_FAILED","USER",None,f"Attempted login with unknown username: '{username}'")
+                log_event(
+                    None,
+                    "LOGIN_FAILED",
+                    "USER",
+                    None,
+                    f"Attempted login with unknown username: {username}"
+                )
             else:
-                # Encode entered password for bcrypt comparison
+                # Compare stored password with stored bcrpyt hash
                 password_bytes = password.encode("utf-8")
-                # Encode stored password hash from database for comparison
                 stored_hash_bytes = user["password_hash"].encode("utf-8")
-                # Verify entered password against stored hash
+                
                 if bcrypt.checkpw(password_bytes, stored_hash_bytes):
-                    # Store user info in session and redirect to dashboard
+                    # Create session after successful authentication
                     session["user_id"] = user["user_id"]
                     session["username"] = user["username"]
                     session["role"] = user["role"]
-                    log_event(user["user_id"],"LOGIN_SUCCESS","USER",None,f"User: {username} logged in successfully.")
+                    # Log successful login attempt and redirect to dashboard
+                    log_event(
+                        user["user_id"],
+                        "LOGIN_SUCCESS",
+                        "USER",
+                        None,
+                        f"User: {username} logged in successfully."
+                        )
                     return redirect(url_for("dashboard"))
                 else:
+                    # Log incorrect credentials attempt
                     error = "Incorrect username or password"
-                    log_event(user["user_id"],"LOGIN_FAILED","USER",None,f"User: {username} attempted login with incorrect password.")
-        # Catch error and display on webpage as error if DB connection issue
+                    log_event(
+                        user["user_id"],
+                        "LOGIN_FAILED",
+                        "USER",
+                        None,
+                        f"User: {username} attempted login with incorrect password."
+                        )
+        
+        # Handle any DB connection errors gracefully and pass to web page
         except Exception as e:
-            error = e
+            error = str(e)
+    # Display rendered login.html template and pass errors if appropriate
     return render_template("login.html", error=error)
 
-# Dashboard Route (Protected Route)
 @app.route("/dashboard")
 def dashboard():
-    # Check if user is has logged in and immediately redirect to login page if false
+    """
+    Display main dashboard page for authenticate users,
+    Redirects to login page if there is no active session
+    """
     if "user_id" not in session:
         return redirect(url_for("login"))
-    # Show dashboard and pass username and role variables to render
-    return render_template("dashboard.html", username=session['username'], role=session['role'])
+    
+    return render_template(
+        "dashboard.html",
+        username=session['username'],
+        role=session['role'])
 
-# Logout Route
 @app.route("/logout")
 def logout():
-    # Clear session to require login for dashboard access
+    """
+    Log the current user out by clearing the session,
+    redirect to log in page after
+    """
     session.clear()
     return redirect(url_for("login"))
 
-# Display asset inventory and handle new asset record creation
 @app.route("/assets", methods=["GET", "POST"])
 def assets():
-    # Check if user is has logged in and immediately redirect to login page if false
+    """
+    Display and manage active assets.
+
+    On GET request it retrieves and displays all non-retired assets
+    On POST request it validates and inserts new assets into the database
+    """
+    # Require Authentication
     if "user_id" not in session:
         return redirect(url_for("login"))
 
     error = None
     success = None
 
-    # If POST request from add asset form submission
+    # Handle new asset submission from submitted form
     if request.method == "POST":
-        # Assign asset attributes to variables from form data
         name = request.form.get("name", "").strip()
         ip_address = request.form.get("ip_address", "").strip()
         asset_type = request.form.get("asset_type", "")
         exposure = request.form.get("exposure", "")
         criticality = request.form.get("criticality", "")
-
-        # Basic validation
+        
+        # Basic validation and error message assignment
         if not name or not ip_address:
             error = "Name and/or IP address are required."
         else:
-            # Attempt to access MySQL database
             try:
-                # Initiate DB connection and cursor variables
                 conn = get_db_connection()
                 cur = conn.cursor()
-                # Assign SQL statement string variable
+
+                # Insert new asset record to database
                 sql = """
-                INSERT INTO assets (name, ip_address, asset_type, exposure, criticality)
-                VALUES (%s, %s, %s, %s, %s)"""
-                # Execute asset INSERT query specifiying attributes
-                cur.execute(sql, (name, ip_address, asset_type, exposure, criticality))
-                # Commit changes to database
+                INSERT INTO assets (
+                name, 
+                ip_address,
+                asset_type,
+                exposure,
+                criticality
+                ) 
+                VALUES (%s, %s, %s, %s, %s)
+                """
+                cur.execute(
+                    sql, 
+                    (
+                        name,
+                        ip_address,
+                        asset_type,
+                        exposure,
+                        criticality
+                    )
+                )
                 conn.commit()
-                # Gracefully close cursor and DB connection sessions
+
                 cur.close()
                 conn.close()
-                # Generate success message string to pass to html template
-                success = "Asset added successfully."
-            except Exception as e:
-                error = "Error adding asset: " + e
 
-    # Fetch assets to display on page each time is loads
+                success = "Asset added successfully."
+            
+            except Exception as e:
+                error = "Error adding asset: " + str(e)
+    
+    # Retrieve all active assets to display in the table
     try:
-        # Initiate DB connection and cursor variables
         conn = get_db_connection()
         cur = conn.cursor()
-        # Execute SQL statement to obtain all active assets by added date descending
-        cur.execute("SELECT * FROM assets WHERE retired = FALSE ORDER BY created_at DESC")
-        # Obtain full query output from curser and assign to variable
+
+        cur.execute(
+            "SELECT * FROM assets WHERE retired = FALSE ORDER BY created_at DESC"
+            )
+        
         asset_list = cur.fetchall()
-        # Gracefully close cursor and DB connection sessions
+
         cur.close()
         conn.close()
 
+    # Catch DB error, create empty asset list and generate error string
     except Exception as e:
-        # Create empty table for error handling
         asset_list = []
-        error = "Database error: " + e
-
-    # Show asset list and pass assets dict, messages, user details to render page
+        error = "Database error: " + str(e)
+    # Pass required data for rendering asset template
     return render_template(
         "assets.html",
         assets=asset_list,
         error=error,
         success=success,
         username=session["username"],
-        role=session["role"]
-    )
+        role=session["role"])
 
 @app.route("/assets/<int:asset_id>", methods=["GET"])
 def asset_detail(asset_id):
+    """
+    Displays detailed information for a specific asset
+    Enables optional edit mode via ?edit=1 parameter
+    """
+    # Require authentication
     if "user_id" not in session:
         return redirect(url_for("login"))
 
+    # Determine if error mode needs to be enabled
     edit_mode = request.args.get("edit") == "1"
 
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        cur.execute("SELECT * FROM assets WHERE asset_id = %s", (asset_id,))
+        # Retrieve asset record by asset_id
+        cur.execute(
+            "SELECT * FROM assets WHERE asset_id = %s",
+            (asset_id)
+        )
+
         asset = cur.fetchone()
 
         cur.close()
         conn.close()
 
+        # Will redirect to custom 404 page/error later
         if asset is None:
             return "Asset not found", 404
 
@@ -314,38 +292,49 @@ def asset_detail(asset_id):
             asset=asset,
             edit_mode=edit_mode,
             username=session["username"],
-            role=session["role"]
-        )
+            role=session["role"])
 
     except Exception as e:
         return "Error loading asset: " + str(e)
 
 @app.route("/assets/<int:asset_id>/update", methods=["POST"])
 def update_asset(asset_id):
+    """
+    Route to update an existing asset record
+
+    Validates submitted form data and applies changes to the database
+
+    Redirects back to edit mode if validation fails or a duplicate IP
+    constraint triggered
+    """
+
+    # Require Authentication
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    # Optional: only admins can edit assets
-    # if session.get("role") != "ADMIN":
-    #     return "Forbidden", 403
-
+    # Retrieve updated form values for asset
     name = request.form.get("name", "").strip()
     ip_address = request.form.get("ip_address", "").strip()
     asset_type = request.form.get("asset_type", "")
     exposure = request.form.get("exposure", "")
     criticality = request.form.get("criticality", "")
 
-    # Basic validation
+    # Error handling for empty name or IP
     if not name or not ip_address:
-        return redirect(url_for("asset_detail", asset_id=asset_id) + "?edit=1")
+        return redirect(url_for("asset_detail",asset_id=asset_id)+"?edit=1")
 
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
+        # Update record to new values by asset_id
         sql = """
         UPDATE assets
-        SET name=%s, ip_address=%s, asset_type=%s, exposure=%s, criticality=%s
+        SET name=%s,
+        ip_address=%s,
+        asset_type=%s,
+        exposure=%s,
+        criticality=%s
         WHERE asset_id=%s
         """
         cur.execute(sql, (name, ip_address, asset_type, exposure, criticality, asset_id))
@@ -354,178 +343,277 @@ def update_asset(asset_id):
         cur.close()
         conn.close()
 
-        # Audit log (recommended)
+        # Log asset update event
         log_event(
             session["user_id"],
             "UPDATE_ASSET",
             "ASSET",
             asset_id,
-            f"Updated asset to name={name}, ip={ip_address}, type={asset_type}, exposure={exposure}, criticality={criticality}"
-        )
+            f"Updated asset to name={name}, ip={ip_address},\
+             type={asset_type}, exposure={exposure}, criticality={criticality}")
 
-        # Back to read-only view
         return redirect(url_for("asset_detail", asset_id=asset_id))
 
+    # Handle DB error due to unique IP constraint
     except IntegrityError:
-        # This will catch duplicate IP address because ip_address is UNIQUE :contentReference[oaicite:1]{index=1}
         return redirect(url_for("asset_detail", asset_id=asset_id) + "?edit=1&err=duplicate_ip")
-
+    
+    # Handle any other error and provide error
     except Exception as e:
         return "Error updating asset: " + str(e)
 
 @app.route("/assets/<int:asset_id>/retire", methods=["POST"])
 def retire_asset(asset_id):
+    """
+    Soft delete an asset from visible list by setting retired flag to TRUE
+    Redirects back to the assets list after completion
+    """
+    # Require authentication
     if "user_id" not in session:
         return redirect(url_for("login"))
+    
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-
-        # Mark asset as retired
+        # Update asset record to mark as retired instead of deleting
         cur.execute("UPDATE assets SET retired = TRUE WHERE asset_id = %s", (asset_id,))
         conn.commit()
 
         cur.close()
         conn.close()
 
-        # After retiring, send user back to assets list
         return redirect(url_for("assets"))
 
     except Exception as e:
-        return f"Error retiring asset: " + e
+        return f"Error retiring asset: " + str(e)
 
 @app.route("/scans", methods=["GET", "POST"])
 def scans():
+    """
+    Scan history page and scan launcher
 
-    # ----------------------------------
-    # REQUIRE LOGIN
-    # ----------------------------------
+    On POST it starts a new scan for a selected asset using the chosen engine (GVM or AI)
+    On GET it updates progress for any running GVM scans and displays scan history
+    """
+    # Require Authentication
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    # ----------------------------------
-    # HANDLE NEW SCAN REQUEST (POST)
-    # ----------------------------------
+    # Handle new scan requrest
     if request.method == "POST":
+        # Obtain asset_id and engine from form input
         asset_id = request.form.get("asset_id")
+        engine = request.form.get("engine") 
 
         if asset_id:
             try:
                 conn = get_db_connection()
                 cur = conn.cursor()
+                # Obtain asset ip_address record using asset_id
+                cur.execute(
+                    "SELECT ip_address FROM assets WHERE asset_id = %s",
+                    (asset_id)
+                )
 
-                # Get IP address for selected asset
-                cur.execute("SELECT ip_address FROM assets WHERE asset_id = %s", (asset_id,))
                 asset = cur.fetchone()
 
                 if asset is None:
-                    raise Exception("Asset not found")
+                    # Handle missing asset, needs conversion to web page error
+                    print("Asset not found")
 
+                # Extract target_ip from obtained asset record
                 target_ip = asset["ip_address"]
 
-                # Start real GVM scan
-                task_id, report_id = start_gvm_scan(target_ip)
+                # GVM Scan Handler
+                if engine == "GVM":
+                    # Obtain GVM task_id and report_id from GVM process
+                    task_id, report_id = start_gvm_scan(target_ip)
 
-                # Insert new scan record
-                cur.execute("""
-                    INSERT INTO scans 
-                    (asset_id, started_by, gvm_task_id, gvm_report_id, status, progress)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                """, (
+                    sql = """
+                    INSERT INTO scans (
                     asset_id,
-                    session["user_id"],
-                    task_id,
-                    report_id,
-                    "Requested",   # Start as Requested (GVM will update)
-                    0
-                ))
+                    started_by,
+                    engine, 
+                    gvm_task_id, 
+                    gvm_report_id,
+                    status,
+                    progress) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """
+                    # Insert scan record into database
+                    cur.execute(
+                        sql,
+                        (
+                            asset_id,
+                            session["user_id"],
+                            "GVM",
+                            task_id,
+                            report_id,
+                            "Requested",
+                            0
+                        )
+                    )
+                    conn.commit()
 
-                conn.commit()
+                # AI Scan Handler
+                elif engine == "AI":
+                    sql = """
+                    INSERT INTO scans (
+                    asset_id,
+                    started_by,
+                    engine,
+                    status,
+                    progress)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """
+                    cur.execute(
+                        sql,
+                        (
+                            asset_id,
+                            session["user_id"],
+                            "AI",
+                            "Running",
+                            0
+                        )
+                    )
+                    scan_id = cur.lastrowid
+                    conn.commit()
+                    # Obtain scanner output (need to adapt scanner script yet)
+                    result = run_ai_scan(target_ip) 
+
+                    # Update scan status in database if failed
+                    if result is None:
+                        sql = """
+                        UPDATE scans
+                        SET status=%s,
+                        error_message=%s,
+                        finished_at=NOW()
+                        WHERE scan_id=%s
+                        """
+                        cur.execute(
+                            sql,
+                            (
+                                "Failed",
+                                "AI scanner returned no data (check Kali script/output)",
+                                scan_id
+                            )
+                        )
+                        conn.commit()
+
+                    else:
+                        # When scanner app is configured to output json
+                        # Will get the following
+                        # scanner_output = raw tool logs
+                        # ai_verdict = the AI final report
+                        scanner_output = json.dumps(result)
+
+                        sql = """
+                        UPDATE scans
+                        SET status=%s,
+                        progress=%s,
+                        scanner_output=%s,
+                        finished_at=NOW()
+                        WHERE scan_id=%s
+                        """
+                        cur.execute(
+                            sql,
+                            (
+                                "Done",
+                                100,
+                                scanner_output,
+                                scan_id
+                            )
+                        )
+                        conn.commit()
+                else:
+                    # Error handling if web page allows unspecified engine
+                    print("Unknown engine selected: ", engine)
+
                 cur.close()
                 conn.close()
 
             except Exception as e:
-                print("Error starting real scan:", e)
-
-    # ----------------------------------
-    # UPDATE SCAN PROGRESS FROM GVM
-    # ----------------------------------
+                print("Error starting scan: "  + str(e))
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Get ALL scans
-        cur.execute("SELECT scan_id, gvm_task_id, status FROM scans")
+        # Update progress for active GVM scans by polling GVM engine
+        sql = """
+        SELECT scan_id, gvm_task_id, status
+        FROM scans
+        WHERE engine = 'GVM' AND gvm_task_id IS NOT NULL
+        """
+        cur.execute(sql)   
         all_scans = cur.fetchall()
 
         FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
 
         for scan in all_scans:
-
             scan_id = scan["scan_id"]
             task_id = scan["gvm_task_id"]
             current_status = scan["status"]
 
-            # Skip already finished scans
+            # Skip scans already completed
             if current_status in FINISHED_STATES:
                 continue
 
-            # Ask GVM for latest status
+            # Obtain up to date status and progress from GVM engine
             status, progress = get_gvm_task_status(task_id)
 
-            print("Updating scan:", scan_id, "| GVM status:", status, "| Progress:", progress)
-
-            # If finished, set finished_at
+            # Update scan record with finished state or current progress
             if status in FINISHED_STATES:
-                cur.execute("""
-                    UPDATE scans
-                    SET status=%s, progress=%s, finished_at=NOW()
-                    WHERE scan_id=%s
-                """, (status, progress, scan_id))
+                sql = """
+                UPDATE scans
+                SET status=%s, progress=%s, finished_at=NOW()
+                WHERE scan_id=%s
+                """
+                cur.execute(sql, (status, progress, scan_id))
             else:
-                cur.execute("""
-                    UPDATE scans
-                    SET status=%s, progress=%s
-                    WHERE scan_id=%s
-                """, (status, progress, scan_id))
-
+                sql = """
+                UPDATE scans
+                SET status=%s, progress=%s
+                WHERE scan_id=%s 
+                """
+                cur.execute(sql, (status, progress, scan_id))
         conn.commit()
+
         cur.close()
         conn.close()
 
     except Exception as e:
-        print("Error updating scan progress:", e)
+        print("Error updating scan progress: " + str(e))
 
-    # ----------------------------------
-    # LOAD SCAN LIST FOR DISPLAY
-    # ----------------------------------
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-
-        cur.execute("""
-            SELECT 
-                scans.scan_id,
-                scans.status,
-                scans.progress,
-                scans.started_at,
-                scans.finished_at,
-                assets.name AS asset_name,
-                assets.ip_address
-            FROM scans
-            JOIN assets ON scans.asset_id = assets.asset_id
-            ORDER BY scans.started_at DESC
-        """)
+        # Obtain all scans and join with associated assets
+        sql = """
+        SELECT 
+        scans.scan_id,
+        scans.engine,
+        scans.status,
+        scans.progress,
+        scans.started_at,
+        scans.finished_at,
+        assets.name AS asset_name,
+        assets.ip_address
+        FROM scans
+        JOIN assets ON scans.asset_id = assets.asset_id
+        ORDER BY scans.started_at DESC
+        """
+        cur.execute(sql)
 
         scan_list = cur.fetchall()
 
-        # Load active assets for dropdown
-        cur.execute("""
-            SELECT asset_id, name 
-            FROM assets 
-            WHERE retired = FALSE 
-            ORDER BY name ASC
-        """)
+        # Filter out retired assets
+        sql = """
+        SELECT asset_id, name 
+        FROM assets 
+        WHERE retired = FALSE 
+        ORDER BY name ASC
+        """
+        cur.execute(sql)
 
         asset_list = cur.fetchall()
 
@@ -535,18 +623,225 @@ def scans():
     except Exception as e:
         scan_list = []
         asset_list = []
-        print("Error loading scans:", e)
+        print("Error loading scans: " + str(e))
 
-    # ----------------------------------
-    # RENDER PAGE
-    # ----------------------------------
     return render_template(
         "scans.html",
         scans=scan_list,
         assets=asset_list,
         username=session["username"],
-        role=session["role"]
-    )
+        role=session["role"])
+
+
+@app.route("/scans/<int:scan_id>", methods=["GET"])
+def scan_detail(scan_id):
+    """
+    Displays detailed information for a specific scan
+
+    Enables optional refresh via ?refresh=1 parameter
+    to update progress for active scans
+    """
+    # Require Authentication
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    # Check for refresh argument from browser page
+    refresh = request.args.get("refresh") == "1"
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Retrieve specific scan and asset details
+        sql = """
+        SELECT
+        scans.*,
+        assets.name AS asset_name,
+        assets.ip_address AS asset_ip
+        FROM scans
+        JOIN assets ON scans.asset_id = assets.asset_id
+        WHERE scans.scan_id = %s
+        """
+        cur.execute(sql,(scan_id,))
+        scan = cur.fetchone()
+
+        if scan is None:
+            cur.close()
+            conn.close()
+            # Return error, 404 page to come
+            return "Scan not found", 404
+
+
+        if refresh:
+            FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
+
+            # Only refresh unfinished scans
+            if scan["status"] not in FINISHED_STATES:
+
+                # Obtain latest status and progress from GVM engine
+                if scan["engine"] == "GVM" and scan["gvm_task_id"]:
+                    status, progress = get_gvm_task_status(scan["gvm_task_id"])
+                    # Update status if finished or progress if not finished
+                    if status in FINISHED_STATES:
+                        sql = """
+                        UPDATE scans
+                        SET status=%s, progress=%s, finished_at=NOW()
+                        WHERE scan_id=%s
+                        """
+                        cur.execute(sql,(status, progress, scan_id))
+                    else:
+                        sql = """
+                        UPDATE scans
+                        SET status=%s, progress=%s
+                        WHERE scan_id=%s
+                        """
+                        cur.execute(sql,(status, progress, scan_id))
+                    conn.commit()
+
+                # If it is an AI scan it just reloads the page.
+
+            # Re fetch scan data after potential updates to show updated info
+            sql = """
+            SELECT
+            scans.*,
+            assets.name AS asset_name,
+            assets.ip_address AS asset_ip
+            FROM scans
+            JOIN assets ON scans.asset_id = assets.asset_id
+            WHERE scans.scan_id = %s
+            """
+            cur.execute(sql, (scan_id,))
+            scan = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        return render_template(
+            "scan_detail.html",
+            scan=scan,
+            username=session["username"],
+            role=session["role"])
+    
+    except Exception as e:
+        return "Error loading scan: " + str(e)
+
+
+@app.route("/scans/<int:scan_id>/ticket/new", methods=["GET", "POST"])
+def ticket_from_scan(scan_id):
+    """
+    Create a new ticket linked to a scan
+    On GET request it shows a pre-filled ticket form using scan output
+    On POST request it validates input and inserts a new ticket into database
+    """
+    # Require authentication
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        if request.method == "GET":
+            # Obtain scan and asset info from database
+            sql = """
+            SELECT
+            scans.*,
+            assets.name AS asset_name,
+            assets.ip_address AS asset_ip
+            FROM scans
+            JOIN assets ON scans.asset_id = assets.asset_id
+            WHERE scans.scan_id = %s
+            """
+            cur.execute(sql,(scan_id))
+            scan = cur.fetchone()
+
+            cur.close()
+            conn.close()
+
+            if scan is None:
+                # Error handling if no scan
+                return "Scan not found", 404
+
+            # Generate title with scan information
+            default_title = (
+            f"Ticket from {scan['engine']} scan on {scan['asset_name']}")
+
+            # Generate default descript, prefer AI verdict, raw output then blank
+            default_desc = ""
+            if scan.get("ai_verdict"):
+                default_desc = scan["ai_verdict"]
+            elif scan.get("scanner_output"):
+                default_desc = scan["scanner_output"]
+
+            # Return generated defaults to web page renderer
+            return render_template(
+                "ticket_new.html",
+                scan=scan,
+                default_title=default_title,
+                default_desc=default_desc,
+                username=session["username"],
+                role=session["role"])
+
+        # This code block runs if POST request
+        # Obtain form data
+        title = request.form.get("title", "").strip()
+        priority = request.form.get("priority", "Medium")
+        status = request.form.get("status", "Open")
+        description = request.form.get("description", "").strip()
+
+        # Error handling (improve later)
+        if not title:
+            cur.close()
+            conn.close()
+            return "Title is required", 400
+
+        # Obtain asset_id from scans
+        sql = """
+        SELECT asset_id FROM scans WHERE scan_id = %s
+        """
+        cur.execute(sql,(scan_id,))
+        scan_row = cur.fetchone()
+
+        #Error handling (improve later)
+        if scan_row is None:
+            cur.close()
+            conn.close()
+            return "Scan not found", 404
+
+        # Create new ticket using obtained form data
+        sql = """
+        INSERT INTO tickets (
+        asset_id,
+        scan_id,
+        created_by,
+        title,
+        priority,
+        status,
+        description)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        cur.execute(
+            sql,
+            (
+                scan_row["asset_id"],
+                scan_id,
+                session["user_id"],
+                title,
+                priority,
+                status,
+                description
+            )
+        )
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+
+        return redirect("/scans/" + str(scan_id))
+
+    except Exception as e:
+        return "Error creating ticket: " + str(e)
+
 # Run Server
 if __name__ == "__main__":
     app.run(debug=True)

@@ -19,34 +19,38 @@
 
     <div class="table-wrap">
       <table class="table">
-        <thead>
-          <tr>
-            <th>Asset</th>
-            <th>Status</th>
-            <th>Progress</th>
-            <th>Started</th>
-            <th>Finished</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for scan in scans %}
-          <tr>
-            <td>{{ scan.asset_name }}</td>
-            <td>{{ scan.status }}</td>
-            <td>{{ scan.progress }}%</td>
-            <td>{{ scan.started_at }}</td>
-            <td>{{ scan.finished_at if scan.finished_at else "-" }}</td>
-          </tr>
-          {% endfor %}
+<thead>
+  <tr>
+    <th>Asset</th>
+    <th>Engine</th>
+    <th>Status</th>
+    <th>Progress</th>
+    <th>Started</th>
+    <th>Finished</th>
+  </tr>
+</thead>
+<tbody>
+  {% for scan in scans %}
+  <tr>
+    <td>
+  <a href="/scans/{{ scan.scan_id }}">{{ scan.asset_name }}</a>
+</td>
+    <td>{{ scan.engine }}</td>
+    <td>{{ scan.status }}</td>
+    <td>{{ scan.progress }}%</td>
+    <td>{{ scan.started_at }}</td>
+    <td>{{ scan.finished_at if scan.finished_at else "-" }}</td>
+  </tr>
+  {% endfor %}
 
-          {% if scans|length == 0 %}
-          <tr>
-            <td colspan="5" style="text-align:center;">
-              No scans yet.
-            </td>
-          </tr>
-          {% endif %}
-        </tbody>
+  {% if scans|length == 0 %}
+  <tr>
+    <td colspan="6" style="text-align:center;">
+      No scans yet.
+    </td>
+  </tr>
+  {% endif %}
+</tbody>
       </table>
     </div>
   </article>
@@ -61,23 +65,29 @@
     </div>
 
     <form method="POST" action="/scans">
-      <div style="padding: 0 16px 16px;">
-        
-        <label class="cell-sub">Select Asset</label>
-        <select class="select" style="width:100%; margin:8px 0 16px;" name="asset_id" required>
-          {% for asset in assets %}
-            <option value="{{ asset.asset_id }}">
-              {{ asset.name }}
-            </option>
-          {% endfor %}
-        </select>
+  <div style="padding: 0 16px 16px;">
 
-        <button class="btn btn-primary" type="submit">
-          Start Scan
-        </button>
+    <label class="cell-sub">Select Asset</label>
+    <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_id" required>
+      {% for asset in assets %}
+        <option value="{{ asset.asset_id }}">
+          {{ asset.name }}
+        </option>
+      {% endfor %}
+    </select>
 
-      </div>
-    </form>
+    <label class="cell-sub">Scan Engine</label>
+    <select class="select" style="width:100%; margin:8px 0 16px;" name="engine" required>
+      <option value="GVM">GVM Vulnerability Scan</option>
+      <option value="AI">AI Recon + Remediation Scan</option>
+    </select>
+
+    <button class="btn btn-primary" type="submit">
+      Start Scan
+    </button>
+
+  </div>
+</form>
   </article>
 
 </section>
