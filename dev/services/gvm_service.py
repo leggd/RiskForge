@@ -4,10 +4,6 @@ from gvm.protocols.gmp import GMP
 from gvm.transforms import EtreeCheckCommandTransform
 from datetime import datetime
 
-GVM_HOST = os.getenv("GVM_HOST", "10.0.96.32")
-GVM_PORT = int(os.getenv("GVM_PORT", "9390"))
-GVM_USERNAME = os.getenv("GVM_USERNAME", "admin")
-GVM_PASSWORD = os.getenv("GVM_PASSWORD", "378d6918-4340-4cfe-95f7-3f084d826d5d")
 
 def start_gvm_scan(target_ip):
     """
@@ -104,12 +100,16 @@ def get_gvm_findings(report_id, limit=10):
 
     Returns a list of dictionaries containing basic finding fields.
     """
-
-    connection = TLSConnection(hostname=GVM_HOST, port=GVM_PORT)
+    HOST = "10.0.96.32"
+    PORT = 9390
+    USERNAME = "admin"
+    PASSWORD = "378d6918-4340-4cfe-95f7-3f084d826d5d"
+    
+    connection = TLSConnection(hostname=HOST, port=PORT)
     transform = EtreeCheckCommandTransform()
 
     with GMP(connection=connection, transform=transform) as gmp:
-        gmp.authenticate(GVM_USERNAME, GVM_PASSWORD)
+        gmp.authenticate(USERNAME, PASSWORD)
 
         report_xml = gmp.get_report(
             report_id=report_id,
