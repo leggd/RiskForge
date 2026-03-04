@@ -36,10 +36,50 @@
       <h3>GVM Details</h3>
       <p><b>Task ID:</b> {{ scan.gvm_task_id if scan.gvm_task_id else "-" }}</p>
       <p><b>Report ID:</b> {{ scan.gvm_report_id if scan.gvm_report_id else "-" }}</p>
+      <form method="POST" action="/scans/{{ scan.scan_id }}/parse_findings" style="margin-top:12px;">
+  <button class="btn btn-primary" type="submit">
+    Parse & Store Findings
+  </button>
+</form>
 
-      <p style="margin-top:12px;">
-        Will add button or section here later to show raw report output or findings.
-      </p>
+<h3>Live Findings Direct from GVM</h3>
+
+<div class="card" style="padding: 12px; max-height: 280px; overflow-y: auto;">
+  {% if findings and findings|length > 0 %}
+    {% for f in findings %}
+      <div style="margin-bottom: 12px;">
+        <p style="margin: 0;">
+          <b>{{ f.nvt_name if f.nvt_name else "Unnamed finding" }}</b>
+        </p>
+
+        <p style="margin: 4px 0 0;">
+          <b>Port:</b> {{ f.port if f.port else "-" }}
+          &nbsp;|&nbsp;
+          <b>CVSS:</b> {{ f.cvss_score }}
+        </p>
+
+        <p style="margin: 4px 0 0;">
+          <b>CVEs:</b>
+          {% if f.cves and f.cves|length > 0 %}
+            {{ f.cves|join(", ") }}
+          {% else %}
+            None
+          {% endif %}
+        </p>
+
+        {% if f.solution %}
+          <p style="margin: 6px 0 0;">
+            <b>Solution:</b> {{ f.solution }}
+          </p>
+        {% endif %}
+
+        <hr style="margin: 10px 0;">
+      </div>
+    {% endfor %}
+  {% else %}
+    <p style="margin: 0;"><i>No findings available yet.</i></p>
+  {% endif %}
+</div>
 
     {% elif scan.engine == "AI" %}
       <h3>AI Scanner Output</h3>

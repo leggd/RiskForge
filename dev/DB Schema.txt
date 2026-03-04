@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 03, 2026 at 12:07 PM
+-- Generation Time: Mar 04, 2026 at 01:47 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -48,6 +48,24 @@ CREATE TABLE `audit_log` (
   `entity_id` int(11) DEFAULT NULL,
   `details` text DEFAULT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `findings`
+--
+
+CREATE TABLE `findings` (
+  `finding_id` int(11) NOT NULL,
+  `scan_id` int(11) NOT NULL,
+  `asset_id` int(11) NOT NULL,
+  `nvt_name` varchar(255) DEFAULT NULL,
+  `port` varchar(50) DEFAULT NULL,
+  `cvss_score` float NOT NULL DEFAULT 0,
+  `cves` text DEFAULT NULL,
+  `solution` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -124,6 +142,14 @@ ALTER TABLE `audit_log`
   ADD KEY `fk_audit_user` (`user_id`);
 
 --
+-- Indexes for table `findings`
+--
+ALTER TABLE `findings`
+  ADD PRIMARY KEY (`finding_id`),
+  ADD KEY `idx_findings_scan_id` (`scan_id`),
+  ADD KEY `idx_findings_asset_id` (`asset_id`);
+
+--
 -- Indexes for table `scans`
 --
 ALTER TABLE `scans`
@@ -164,6 +190,12 @@ ALTER TABLE `audit_log`
   MODIFY `audit_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `findings`
+--
+ALTER TABLE `findings`
+  MODIFY `finding_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `scans`
 --
 ALTER TABLE `scans`
@@ -190,6 +222,13 @@ ALTER TABLE `users`
 --
 ALTER TABLE `audit_log`
   ADD CONSTRAINT `fk_audit_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `findings`
+--
+ALTER TABLE `findings`
+  ADD CONSTRAINT `fk_findings_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`asset_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_findings_scan` FOREIGN KEY (`scan_id`) REFERENCES `scans` (`scan_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `scans`

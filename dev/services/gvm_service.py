@@ -1,7 +1,13 @@
+import os
 from gvm.connections import TLSConnection
 from gvm.protocols.gmp import GMP
 from gvm.transforms import EtreeCheckCommandTransform
 from datetime import datetime
+
+GVM_HOST = os.getenv("GVM_HOST", "10.0.96.32")
+GVM_PORT = int(os.getenv("GVM_PORT", "9390"))
+GVM_USERNAME = os.getenv("GVM_USERNAME", "admin")
+GVM_PASSWORD = os.getenv("GVM_PASSWORD", "378d6918-4340-4cfe-95f7-3f084d826d5d")
 
 def start_gvm_scan(target_ip):
     """
@@ -85,8 +91,80 @@ def get_gvm_task_status(task_id):
 
         try:
             progress = int(progress)
+            if progress == -1:
+                progress = 100
         except:
             progress = 0
 
         return status, progress
 
+def get_gvm_findings(report_id, limit=10):
+    """
+    Fetch a GVM report and return the top findings sorted by severity.
+
+    Returns a list of dictionaries containing basic finding fields.
+    """
+
+    connection = TLSConnection(hostname=GVM_HOST, port=GVM_PORT)
+    transform = EtreeCheckCommandTransform()
+
+    with GMP(connection=connection, transform=transform) as gmp:
+        gmp.authenticate(GVM_USERNAME, GVM_PASSWORD)
+
+        report_xml = gmp.get_report(
+            report_id=report_id,
+            details=True,
+            filter_string="rows=1000"
+        )
+
+    results = report_xml.findall(".//report/results/result")
+
+    # Sort by severity (highest first)
+    def severity_float(result_node):
+        sev_text = result_node.findtext("severity")
+        try:
+            return float(sev_text)
+        except Exception:
+            return 0.0
+
+    results_sorted = sorted(results, key=severity_float, reverse=True)
+
+    findings = []
+
+    for r in results_sorted[:limit]:
+        # Basic fields
+        port = (r.findtext("port") or "").strip() or None
+        sev_text = (r.findtext("severity") or "").strip()
+        try:
+            severity = float(sev_text) if sev_text else 0.0
+        except Exception:
+            severity = 0.0
+
+        # NVT fields
+        nvt = r.find("nvt")
+        nvt_name = None
+        solution = None
+        cves = []
+
+        if nvt is not None:
+            nvt_name = (nvt.findtext("name") or "").strip() or None
+
+            solution = (nvt.findtext("solution") or "").strip() or None
+
+            # Extract CVEs from refs
+            for ref in nvt.findall(".//refs/ref"):
+                ref_type = (ref.get("type") or "").lower()
+                if ref_type == "cve":
+                    cve_id = ref.get("id")
+                    if cve_id:
+                        cves.append(cve_id.strip())
+
+        findings.append({
+            "port": port,
+            "cvss_score": severity,
+            "nvt_name": nvt_name,
+            "cves": cves,
+            "solution": solution,
+        })
+
+    return findings

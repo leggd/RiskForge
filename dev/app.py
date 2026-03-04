@@ -6,6 +6,8 @@ import bcrypt
 from pymysql.err import IntegrityError
 from services.gvm_service import start_gvm_scan, get_gvm_task_status
 from services.remote_scanner import run_ai_scan
+from services.gvm_service import get_gvm_findings
+from services.findings_service import store_findings
 import json
 import datetime
 
@@ -636,95 +638,141 @@ def scans():
 @app.route("/scans/<int:scan_id>", methods=["GET"])
 def scan_detail(scan_id):
     """
-    Displays detailed information for a specific scan
+    Displays detailed information for a specific scan.
 
     Enables optional refresh via ?refresh=1 parameter
-    to update progress for active scans
+    to update progress for active scans.
     """
-    # Require Authentication
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    # Check for refresh argument from browser page
     refresh = request.args.get("refresh") == "1"
 
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Retrieve specific scan and asset details
         sql = """
         SELECT
-        scans.*,
-        assets.name AS asset_name,
-        assets.ip_address AS asset_ip
+            scans.*,
+            assets.name AS asset_name,
+            assets.ip_address AS asset_ip
         FROM scans
         JOIN assets ON scans.asset_id = assets.asset_id
         WHERE scans.scan_id = %s
         """
-        cur.execute(sql,(scan_id,))
+        cur.execute(sql, (scan_id,))
         scan = cur.fetchone()
 
         if scan is None:
             cur.close()
             conn.close()
-            # Return error, 404 page to come
             return "Scan not found", 404
-
 
         if refresh:
             FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
 
-            # Only refresh unfinished scans
             if scan["status"] not in FINISHED_STATES:
-
-                # Obtain latest status and progress from GVM engine
                 if scan["engine"] == "GVM" and scan["gvm_task_id"]:
                     status, progress = get_gvm_task_status(scan["gvm_task_id"])
-                    # Update status if finished or progress if not finished
+
                     if status in FINISHED_STATES:
                         sql = """
                         UPDATE scans
                         SET status=%s, progress=%s, finished_at=NOW()
                         WHERE scan_id=%s
                         """
-                        cur.execute(sql,(status, progress, scan_id))
+                        cur.execute(sql, (status, progress, scan_id))
                     else:
                         sql = """
                         UPDATE scans
                         SET status=%s, progress=%s
                         WHERE scan_id=%s
                         """
-                        cur.execute(sql,(status, progress, scan_id))
+                        cur.execute(sql, (status, progress, scan_id))
+
                     conn.commit()
 
-                # If it is an AI scan it just reloads the page.
-
-            # Re fetch scan data after potential updates to show updated info
-            sql = """
-            SELECT
-            scans.*,
-            assets.name AS asset_name,
-            assets.ip_address AS asset_ip
-            FROM scans
-            JOIN assets ON scans.asset_id = assets.asset_id
-            WHERE scans.scan_id = %s
-            """
+            # Re-fetch scan after refresh update
             cur.execute(sql, (scan_id,))
             scan = cur.fetchone()
 
         cur.close()
         conn.close()
 
+        # ----------------------------------------------------
+        # Show Top GVM Findings (PoC) on the scan detail page
+        # ----------------------------------------------------
+        findings = []
+        FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
+
+        if (
+            scan["engine"] == "GVM"
+            and scan["status"] in FINISHED_STATES
+            and scan.get("gvm_report_id")
+        ):
+            try:
+                findings = get_gvm_findings(scan["gvm_report_id"], limit=200)
+            except Exception as e:
+                print("Error fetching GVM findings:", e)
+                findings = []
+
         return render_template(
             "scan_detail.html",
             scan=scan,
+            findings=findings,
             username=session["username"],
-            role=session["role"])
-    
+            role=session["role"],
+        )
+
     except Exception as e:
         return "Error loading scan: " + str(e)
 
+@app.route("/scans/<int:scan_id>/parse_findings", methods=["POST"])
+def parse_findings(scan_id):
+    """
+    Parse findings from the GVM report and store them in the findings table.
+    This is a manual PoC trigger (does not replace the live display yet).
+    """
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # We need asset_id + report_id to parse and store findings
+        cur.execute(
+            "SELECT asset_id, engine, gvm_report_id FROM scans WHERE scan_id = %s",
+            (scan_id,),
+        )
+        scan = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        if scan is None:
+            return "Scan not found", 404
+
+        if scan["engine"] != "GVM":
+            return "This scan is not a GVM scan", 400
+
+        if not scan["gvm_report_id"]:
+            return "No GVM report ID found for this scan", 400
+
+        findings = get_gvm_findings(scan["gvm_report_id"], limit=200)
+
+        store_findings(
+            scan_id=scan_id,
+            asset_id=scan["asset_id"],
+            findings=findings,
+        )
+
+        return redirect(url_for("scan_detail", scan_id=scan_id))
+
+    except Exception as e:
+        return "Error parsing/storing findings: " + str(e)
 
 @app.route("/scans/<int:scan_id>/ticket/new", methods=["GET", "POST"])
 def ticket_from_scan(scan_id):
