@@ -767,21 +767,20 @@ def parse_findings(scan_id):
             scan_id=scan_id,
             asset_id=scan["asset_id"],
             findings=findings,
+            created_by=session["user_id"],
+            min_cvss=5.0,
         )
-
         return redirect(url_for("scan_detail", scan_id=scan_id))
 
     except Exception as e:
         return "Error parsing/storing findings: " + str(e)
 
-@app.route("/scans/<int:scan_id>/ticket/new", methods=["GET", "POST"])
-def ticket_from_scan(scan_id):
+@app.route("/tickets", methods=["GET"])
+def tickets():
     """
-    Create a new ticket linked to a scan
-    On GET request it shows a pre-filled ticket form using scan output
-    On POST request it validates input and inserts a new ticket into database
+    Display all tickets (newest first).
     """
-    # Require authentication
+
     if "user_id" not in session:
         return redirect(url_for("login"))
 
@@ -789,107 +788,132 @@ def ticket_from_scan(scan_id):
         conn = get_db_connection()
         cur = conn.cursor()
 
-        if request.method == "GET":
-            # Obtain scan and asset info from database
-            sql = """
-            SELECT
-            scans.*,
+        sql = """
+        SELECT
+            tickets.ticket_id,
+            tickets.title,
+            tickets.priority,
+            tickets.status,
+            tickets.created_at,
+            tickets.closed_at,
             assets.name AS asset_name,
             assets.ip_address AS asset_ip
-            FROM scans
-            JOIN assets ON scans.asset_id = assets.asset_id
-            WHERE scans.scan_id = %s
-            """
-            cur.execute(sql,(scan_id))
-            scan = cur.fetchone()
-
-            cur.close()
-            conn.close()
-
-            if scan is None:
-                # Error handling if no scan
-                return "Scan not found", 404
-
-            # Generate title with scan information
-            default_title = (
-            f"Ticket from {scan['engine']} scan on {scan['asset_name']}")
-
-            # Generate default descript, prefer AI verdict, raw output then blank
-            default_desc = ""
-            if scan.get("ai_verdict"):
-                default_desc = scan["ai_verdict"]
-            elif scan.get("scanner_output"):
-                default_desc = scan["scanner_output"]
-
-            # Return generated defaults to web page renderer
-            return render_template(
-                "ticket_new.html",
-                scan=scan,
-                default_title=default_title,
-                default_desc=default_desc,
-                username=session["username"],
-                role=session["role"])
-
-        # This code block runs if POST request
-        # Obtain form data
-        title = request.form.get("title", "").strip()
-        priority = request.form.get("priority", "Medium")
-        status = request.form.get("status", "Open")
-        description = request.form.get("description", "").strip()
-
-        # Error handling (improve later)
-        if not title:
-            cur.close()
-            conn.close()
-            return "Title is required", 400
-
-        # Obtain asset_id from scans
-        sql = """
-        SELECT asset_id FROM scans WHERE scan_id = %s
+        FROM tickets
+        JOIN assets ON tickets.asset_id = assets.asset_id
+        ORDER BY tickets.created_at DESC
         """
-        cur.execute(sql,(scan_id,))
-        scan_row = cur.fetchone()
+        cur.execute(sql)
+        ticket_list = cur.fetchall()
 
-        #Error handling (improve later)
-        if scan_row is None:
-            cur.close()
-            conn.close()
-            return "Scan not found", 404
-
-        # Create new ticket using obtained form data
-        sql = """
-        INSERT INTO tickets (
-        asset_id,
-        scan_id,
-        created_by,
-        title,
-        priority,
-        status,
-        description)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """
-        cur.execute(
-            sql,
-            (
-                scan_row["asset_id"],
-                scan_id,
-                session["user_id"],
-                title,
-                priority,
-                status,
-                description
-            )
-        )
-        conn.commit()
-        
         cur.close()
         conn.close()
 
-        return redirect("/scans/" + str(scan_id))
+    except Exception as e:
+        ticket_list = []
+        print("Error loading tickets:", e)
+
+    return render_template(
+        "tickets.html",
+        tickets=ticket_list,
+        username=session["username"],
+        role=session["role"],
+    )
+
+@app.route("/tickets/<int:ticket_id>", methods=["GET"])
+def ticket_detail(ticket_id):
+    """
+    Display a single ticket and show a simple status update form.
+    """
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        sql = """
+        SELECT
+            tickets.*,
+            assets.name AS asset_name,
+            assets.ip_address AS asset_ip
+        FROM tickets
+        JOIN assets ON tickets.asset_id = assets.asset_id
+        WHERE tickets.ticket_id = %s
+        """
+        cur.execute(sql, (ticket_id,))
+        ticket = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        if ticket is None:
+            return "Ticket not found", 404
+
+        return render_template(
+            "ticket_detail.html",
+            ticket=ticket,
+            username=session["username"],
+            role=session["role"],
+        )
 
     except Exception as e:
-        return "Error creating ticket: " + str(e)
+        return "Error loading ticket: " + str(e)
 
+@app.route("/tickets/<int:ticket_id>/update", methods=["POST"])
+def update_ticket(ticket_id):
+    """
+    Update ticket status and optional closed reason.
+    If the status is set to Closed, a reason is required.
+    """
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    status = request.form.get("status", "Open").strip()
+    closed_reason = request.form.get("closed_reason", "").strip()
+
+    # If user closes the ticket, force a reason (PoC requirement)
+    if status == "Closed" and not closed_reason:
+        return redirect(url_for("ticket_detail", ticket_id=ticket_id) + "?err=reason_required")
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # If closing: set closed_at and store reason
+        if status == "Closed":
+            sql = """
+            UPDATE tickets
+            SET status=%s,
+            closed_reason=%s,
+            closed_at=NOW()
+            WHERE ticket_id=%s
+            """
+            cur.execute(sql, (status, closed_reason, ticket_id))
+
+        else:
+            # If re-opening: clear close fields
+            sql = """
+            UPDATE tickets
+            SET status=%s,
+            closed_reason=NULL,
+            closed_at=NULL,
+            WHERE ticket_id=%s
+            """
+            cur.execute(sql, (status, ticket_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        # Optional audit entry (if you're using log_event widely)
+        # log_event(session["user_id"], "UPDATE_TICKET", "TICKET", ticket_id, f"Set status={status}")
+
+        return redirect(url_for("ticket_detail", ticket_id=ticket_id))
+
+    except Exception as e:
+        return "Error updating ticket: " + str(e)
 # Run Server
 if __name__ == "__main__":
     app.run(debug=True)
