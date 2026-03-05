@@ -165,6 +165,14 @@ def logout():
     Log the current user out by clearing the session,
     redirect to log in page after
     """
+    if "user_id" in session:
+        log_event(
+            session["user_id"],
+            "LOGOUT",
+            "USER",
+            session["user_id"],
+            f"User {session['username']} logged out."
+        )
     session.clear()
     return redirect(url_for("login"))
 
@@ -221,7 +229,15 @@ def assets():
                     )
                 )
                 conn.commit()
+                asset_id = cur.lastrowid
 
+                log_event(
+                    session["user_id"],
+                    "CREATE_ASSET",
+                    "ASSET",
+                    asset_id,
+                    f"Created asset name={name}, ip={ip_address}"
+                )
                 cur.close()
                 conn.close()
 
@@ -381,6 +397,14 @@ def retire_asset(asset_id):
         cur.execute("UPDATE assets SET retired = TRUE WHERE asset_id = %s", (asset_id,))
         conn.commit()
 
+        log_event(
+            session["user_id"],
+            "RETIRE_ASSET",
+            "ASSET",
+            asset_id,
+            f"Asset {asset_id} marked as retired"
+        )
+
         cur.close()
         conn.close()
 
@@ -456,7 +480,15 @@ def scans():
                         )
                     )
                     conn.commit()
+                    scan_id = cur.lastrowid
 
+                    log_event(
+                        session["user_id"],
+                        "START_SCAN",
+                        "SCAN",
+                         scan_id,
+                         f"GVM scan started for asset_id={asset_id}, task_id={task_id}"
+                    )
                 # AI Scan Handler
                 elif engine == "AI":
                     sql = """
@@ -502,6 +534,14 @@ def scans():
                         )
                         conn.commit()
 
+                        log_event(
+                            session["user_id"],
+                            "SCAN_FAILED",
+                            "SCAN",
+                             scan_id,
+                            "AI scanner returned no data"
+                        )
+
                     else:
                         # When scanner app is configured to output json
                         # Will get the following
@@ -527,6 +567,14 @@ def scans():
                             )
                         )
                         conn.commit()
+                        
+                        log_event(
+                            session["user_id"],
+                            "SCAN_COMPLETED",
+                            "SCAN",
+                            scan_id,
+                            f"AI scan completed successfully for asset_id={asset_id}"
+                        )
                 else:
                     # Error handling if web page allows unspecified engine
                     print("Unknown engine selected: ", engine)
@@ -571,6 +619,24 @@ def scans():
                 WHERE scan_id=%s
                 """
                 cur.execute(sql, (status, progress, scan_id))
+                if status in ("Failed", "Aborted", "Interrupted"):
+                    log_event(
+                        session["user_id"],
+                        "SCAN_FAILED",
+                        "SCAN",
+                        scan_id,
+                        f"GVM scan finished with failure status={status}"
+                )
+                
+                elif status == "Done":
+                      log_event(
+                          session["user_id"],
+                          "SCAN_COMPLETED",
+                          "SCAN",
+                          scan_id,
+                          f"GVM scan completed successfully (progress={progress}%)"
+          
+                      )
             else:
                 sql = """
                 UPDATE scans
@@ -907,9 +973,7 @@ def update_ticket(ticket_id):
         cur.close()
         conn.close()
 
-        # Optional audit entry (if you're using log_event widely)
-        # log_event(session["user_id"], "UPDATE_TICKET", "TICKET", ticket_id, f"Set status={status}")
-
+       
         return redirect(url_for("ticket_detail", ticket_id=ticket_id))
 
     except Exception as e:
