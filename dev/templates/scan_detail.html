@@ -38,8 +38,9 @@
       <p><b>Report ID:</b> {{ scan.gvm_report_id if scan.gvm_report_id else "-" }}</p>
       <form method="POST" action="/scans/{{ scan.scan_id }}/parse_findings" style="margin-top:12px;">
   <button class="btn btn-primary" type="submit">
-    Parse & Store Findings
+    Store Findings & Create Tickets (where CVSS Scores are 5 or higher)
   </button>
+  <p><i>This will be changed when Danny develops the RiskForge Scoring Logic</i></p>
 </form>
 
 <h3>Live Findings Direct from GVM</h3>

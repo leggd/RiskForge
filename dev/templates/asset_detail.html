@@ -5,21 +5,35 @@
 {% block page_subtitle %}View and edit asset{% endblock %}
 
 {% block content %}
+<article class="card">
+<div class="card-head">
+  <div>
+    <h2>{{ asset.name }}</h2>
+    <p>{{ asset.ip_address }}</p>
+  </div>
 
-<div class="card">
-  <div class="card-head">
-    <div>
-      <h2>{{ asset.name }}</h2>
-      <p>{{ asset.ip_address }}</p>
-    </div>
-
-    {% if not edit_mode %}
-      <a class="btn btn-primary"
-         href="/assets/{{ asset.asset_id }}?edit=1">
+  {% if not edit_mode %}
+    <div class="card-actions">
+      <a class="btn btn-primary" href="/assets/{{ asset.asset_id }}?edit=1">
         Edit
       </a>
-    {% endif %}
-  </div>
+
+      {% if not asset.retired %}
+        <form method="POST"
+              action="/assets/{{ asset.asset_id }}/retire"
+              style="margin:0;">
+          <button class="btn btn-ghost"
+                  type="submit"
+                  onclick="return confirm('Retire this asset? It will be hidden from the assets list.');">
+            Retire
+          </button>
+        </form>
+      {% else %}
+        <span class="pill">Retired</span>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
 
   {% if edit_mode %}
     <form method="POST" action="/assets/{{ asset.asset_id }}/update">
@@ -70,5 +84,5 @@
   {% endif %}
 
 </div>
-
+</article>
 {% endblock %}
