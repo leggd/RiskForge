@@ -9,12 +9,14 @@
 <div class="card">
   <div class="card-head">
     <div>
+      <!-- Populate ticket header from tickets table -->
       <h2>Ticket #{{ ticket.ticket_id }}</h2>
       <p><b>Asset:</b> {{ ticket.asset_name }} ({{ ticket.asset_ip }})</p>
     </div>
 
     <div>
       <a class="btn btn-ghost" href="/tickets">Back</a>
+      <!-- Show view scan button if associated scan is in ticket record (ideally always be one) -->
       {% if ticket.scan_id %}
         <a class="btn btn-ghost" href="/scans/{{ ticket.scan_id }}">View Scan</a>
       {% endif %}
@@ -22,10 +24,11 @@
   </div>
 
   <div style="padding: 0 16px 16px;">
+    <!-- Handle closing tickets without reason (maybe add minimum char limit later)-->
     {% if request.args.get("err") == "reason_required" %}
       <p style="margin: 0 0 12px;"><b>Error:</b> Close reason is required when closing a ticket.</p>
     {% endif %}
-
+    <!-- Populate ticket information from ticket record (improve layout later)-->
     <p><b>Title:</b> {{ ticket.title }}</p>
     <p><b>Priority:</b> {{ ticket.priority }}</p>
     <p><b>Status:</b> {{ ticket.status }}</p>
@@ -49,10 +52,11 @@
     <hr style="margin: 16px 0;">
 
     <h3>Update Ticket</h3>
-
+    <!-- Handle ticket update pass form information to /sticks/id/update route-->
     <form method="POST" action="/tickets/{{ ticket.ticket_id }}/update">
       <label class="cell-sub">Status</label>
       <select class="select" style="width:100%; margin:8px 0 12px;" name="status" required>
+        <!-- Prefill option depending on current status-->
         <option value="Open" {% if ticket.status == "Open" %}selected{% endif %}>Open</option>
         <option value="In Progress" {% if ticket.status == "In Progress" %}selected{% endif %}>In Progress</option>
         <option value="Resolved" {% if ticket.status == "Resolved" %}selected{% endif %}>Resolved</option>

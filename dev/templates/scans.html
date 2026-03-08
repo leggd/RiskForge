@@ -7,8 +7,6 @@
 {% block content %}
 
 <section class="grid two-col">
-
-  <!-- LEFT SIDE: Scan Table -->
   <article class="card">
     <div class="card-head">
       <div>
@@ -30,11 +28,14 @@
   </tr>
 </thead>
 <tbody>
+  <!-- Iterate through scans list-->
   {% for scan in scans %}
   <tr>
     <td>
+      <!-- Generate link to scan detail page displaying specific asset name -->
   <a href="/scans/{{ scan.scan_id }}">{{ scan.asset_name }}</a>
 </td>
+    <!-- Populate table data elements per scan -->
     <td>{{ scan.engine }}</td>
     <td>{{ scan.status }}</td>
     <td>{{ scan.progress }}%</td>
@@ -43,6 +44,7 @@
   </tr>
   {% endfor %}
 
+  <!-- Handle empty scan table -->
   {% if scans|length == 0 %}
   <tr>
     <td colspan="6" style="text-align:center;">
@@ -54,8 +56,7 @@
       </table>
     </div>
   </article>
-
-  <!-- RIGHT SIDE: Start Scan Form -->
+  <!-- New Scan form on right -->
   <article class="card">
     <div class="card-head">
       <div>
@@ -63,12 +64,13 @@
         <p>Initiate scan for a single asset</p>
       </div>
     </div>
-
+    <!-- Pass scan start field values to /scans POST route to handle scan start logic-->
     <form method="POST" action="/scans">
   <div style="padding: 0 16px 16px;">
 
     <label class="cell-sub">Select Asset</label>
     <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_id" required>
+      <!-- Iterate through assets table list to display name for selection -->
       {% for asset in assets %}
         <option value="{{ asset.asset_id }}">
           {{ asset.name }}
@@ -79,7 +81,7 @@
     <label class="cell-sub">Scan Engine</label>
     <select class="select" style="width:100%; margin:8px 0 16px;" name="engine" required>
       <option value="GVM">GVM Vulnerability Scan</option>
-      <option value="AI">AI Recon + Remediation Scan</option>
+      <option value="AI">AI Scan</option>
     </select>
 
     <button class="btn btn-primary" type="submit">

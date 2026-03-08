@@ -9,6 +9,7 @@ from services.remote_scanner import run_ai_scan
 from services.gvm_service import get_gvm_findings
 from services.findings_service import store_findings
 import json
+import ipaddress
 import datetime
 
 # Load environment variables for DB details, api keys etc
@@ -223,41 +224,56 @@ def assets():
         if not name or not ip_address:
             error = "Name and/or IP address are required."
         else:
+            # Attempt to make ipaddress object for input handling
             try:
-                # Insert new asset record to database
-                sql = """
-                INSERT INTO assets (
-                name, 
-                ip_address,
-                asset_type,
-                exposure,
-                criticality
-                ) 
-                VALUES (%s, %s, %s, %s, %s)
-                """
-                asset_id = execute_query(
-                    sql, 
-                    (
-                        name,
+                ipaddress.ip_address(ip_address)
+            except ValueError:
+                error = "Invalid IP address format."
+            if not error:
+                try:
+                    sql = """
+                    SELECT asset_id FROM assets
+                    WHERE ip_address = %s OR name = %s
+                    """
+                    exists = execute_query(sql,(ip_address,name),"one")
+                    if exists:
+                        error = "Asset with that name or IP address already exists"
+                except:
+                    try:
+                        # Insert new asset record to database
+                        sql = """
+                        INSERT INTO assets (
+                        name, 
                         ip_address,
                         asset_type,
                         exposure,
                         criticality
-                    )
-                )
+                        ) 
+                        VALUES (%s, %s, %s, %s, %s)
+                        """
+                        asset_id = execute_query(
+                            sql, 
+                            (
+                                name,
+                                ip_address,
+                                asset_type,
+                                exposure,
+                                criticality
+                            )
+                        )
 
-                log_event(
-                    session["user_id"],
-                    "CREATE_ASSET",
-                    "ASSET",
-                    asset_id,
-                    f"Created asset name={name}, ip={ip_address}"
-                )
+                        log_event(
+                            session["user_id"],
+                            "CREATE_ASSET",
+                            "ASSET",
+                            asset_id,
+                            f"Created asset name={name}, ip={ip_address}"
+                        )
 
-                success = "Asset added successfully."
-            
-            except Exception as e:
-                error = "Error adding asset: " + str(e)
+                        success = "Asset added successfully."
+                    
+                    except Exception as e:
+                        error = "Error adding asset: " + str(e)
     
     # Retrieve all active assets to display in the table
     try:
@@ -456,130 +472,140 @@ def scans():
                 # Extract target_ip from obtained asset record
                 target_ip = asset["ip_address"]
 
-                # GVM Scan Handler
-                if engine == "GVM":
-                    # Obtain GVM task_id and report_id from GVM process
-                    task_id, report_id = start_gvm_scan(target_ip)
+                sql = """
+                SELECT scan_id FROM scans 
+                WHERE asset_id = %s 
+                AND status NOT IN ('Done', 'Stopped', 'Interrupted', 'Aborted', 'Failed')
+                """
+                exists = execute_query(sql,(asset_id),"one")
+                
+                if exists:
+                    # Display error webpage, will implement inside page later
+                    return "Scan already running for this asset"
+                else:
+                    # GVM Scan Handler
+                    if engine == "GVM":
+                        # Obtain GVM task_id and report_id from GVM process
+                        task_id, report_id = start_gvm_scan(target_ip)
 
-                    sql = """
-                    INSERT INTO scans (
-                    asset_id,
-                    started_by,
-                    engine, 
-                    gvm_task_id, 
-                    gvm_report_id,
-                    status,
-                    progress) 
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """
-                    # Insert scan record into database
-                    scan_id = execute_query(
-                        sql,
-                        (
-                            asset_id,
-                            session["user_id"],
-                            "GVM",
-                            task_id,
-                            report_id,
-                            "Requested",
-                            0
-                        )
-                    )
-
-                    log_event(
-                        session["user_id"],
-                        "START_SCAN",
-                        "SCAN",
-                         scan_id,
-                         f"GVM scan started for asset_id={asset_id}, task_id={task_id}"
-                    )
-
-                # AI Scan Handler
-                elif engine == "AI":
-                    sql = """
-                    INSERT INTO scans (
-                    asset_id,
-                    started_by,
-                    engine,
-                    status,
-                    progress)
-                    VALUES (%s, %s, %s, %s, %s)
-                    """
-                    scan_id = execute_query(
-                        sql,
-                        (
-                            asset_id,
-                            session["user_id"],
-                            "AI",
-                            "Running",
-                            0
-                        )
-                    )
-                    # Obtain scanner output (need to adapt scanner script yet)
-                    result = run_ai_scan(target_ip) 
-
-                    # Update scan status in database if failed
-                    if result is None:
                         sql = """
-                        UPDATE scans
-                        SET status=%s,
-                        error_message=%s,
-                        finished_at=NOW()
-                        WHERE scan_id=%s
+                        INSERT INTO scans (
+                        asset_id,
+                        started_by,
+                        engine, 
+                        gvm_task_id, 
+                        gvm_report_id,
+                        status,
+                        progress) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
                         """
-                        execute_query(
+                        # Insert scan record into database
+                        scan_id = execute_query(
                             sql,
                             (
-                                "Failed",
-                                "AI scanner returned no data (check Kali script/output)",
-                                scan_id
+                                asset_id,
+                                session["user_id"],
+                                "GVM",
+                                task_id,
+                                report_id,
+                                "Requested",
+                                0
                             )
                         )
 
                         log_event(
                             session["user_id"],
-                            "SCAN_FAILED",
-                            "SCAN",
-                             scan_id,
-                            "AI scanner returned no data"
-                        )
-
-                    else:
-                        # When scanner app is configured to output json
-                        # Will get the following
-                        # scanner_output = raw tool logs
-                        # ai_verdict = the AI final report
-                        scanner_output = json.dumps(result)
-
-                        sql = """
-                        UPDATE scans
-                        SET status=%s,
-                        progress=%s,
-                        scanner_output=%s,
-                        finished_at=NOW()
-                        WHERE scan_id=%s
-                        """
-                        execute_query(
-                            sql,
-                            (
-                                "Done",
-                                100,
-                                scanner_output,
-                                scan_id
-                            )
-                        )
-                        
-                        log_event(
-                            session["user_id"],
-                            "SCAN_COMPLETED",
+                            "START_SCAN",
                             "SCAN",
                             scan_id,
-                            f"AI scan completed successfully for asset_id={asset_id}"
+                            f"GVM scan started for asset_id={asset_id}, task_id={task_id}"
                         )
-                else:
-                    # Error handling if web page allows unspecified engine
-                    print("Unknown engine selected: ", engine)
 
+                    # AI Scan Handler
+                    elif engine == "AI":
+                        sql = """
+                        INSERT INTO scans (
+                        asset_id,
+                        started_by,
+                        engine,
+                        status,
+                        progress)
+                        VALUES (%s, %s, %s, %s, %s)
+                        """
+                        scan_id = execute_query(
+                            sql,
+                            (
+                                asset_id,
+                                session["user_id"],
+                                "AI",
+                                "Running",
+                                0
+                            )
+                        )
+                        # Obtain scanner output (need to adapt scanner script yet)
+                        result = run_ai_scan(target_ip) 
+
+                        # Update scan status in database if failed
+                        if result is None:
+                            sql = """
+                            UPDATE scans
+                            SET status=%s,
+                            error_message=%s,
+                            finished_at=NOW()
+                            WHERE scan_id=%s
+                            """
+                            execute_query(
+                                sql,
+                                (
+                                    "Failed",
+                                    "AI scanner returned no data (check Kali script/output)",
+                                    scan_id
+                                )
+                            )
+
+                            log_event(
+                                session["user_id"],
+                                "SCAN_FAILED",
+                                "SCAN",
+                                scan_id,
+                                "AI scanner returned no data"
+                            )
+
+                        else:
+                            # When scanner app is configured to output json
+                            # Will get the following
+                            # scanner_output = raw tool logs
+                            # ai_verdict = the AI final report
+                            scanner_output = json.dumps(result)
+
+                            sql = """
+                            UPDATE scans
+                            SET status=%s,
+                            progress=%s,
+                            scanner_output=%s,
+                            finished_at=NOW()
+                            WHERE scan_id=%s
+                            """
+                            execute_query(
+                                sql,
+                                (
+                                    "Done",
+                                    100,
+                                    scanner_output,
+                                    scan_id
+                                )
+                            )
+                            
+                            log_event(
+                                session["user_id"],
+                                "SCAN_COMPLETED",
+                                "SCAN",
+                                scan_id,
+                                f"AI scan completed successfully for asset_id={asset_id}"
+                            )
+                    else:
+                        # Error handling if web page allows unspecified engine
+                        print("Unknown engine selected: ", engine)
             except Exception as e:
                 print("Error starting scan: "  + str(e))
     try:
@@ -612,10 +638,17 @@ def scans():
                 UPDATE scans
                 SET status=%s,
                 progress=%s,
-                finished_at=NOW()
+                finished_at = NOW()
                 WHERE scan_id=%s
                 """
                 execute_query(sql, (status, progress, scan_id))
+                # Update asset record last_scanned_at time
+                sql = """
+                UPDATE assets
+                SET last_scanned_at = NOW()
+                WHERE asset_id = %s
+                """
+                execute_query(sql,(asset_id))
                 if status in ("Failed", "Aborted", "Interrupted"):
                     log_event(
                         session["user_id"],

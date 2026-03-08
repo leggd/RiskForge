@@ -9,6 +9,7 @@
 <div class="card">
   <div class="card-head">
     <div>
+      <!-- Populate scan ID, Asset Name and IP from database -->
       <h2>Scan #{{ scan.scan_id }}</h2>
       <p><b>Asset:</b> {{ scan.asset_name }} ({{ scan.asset_ip }})</p>
     </div>
@@ -20,6 +21,7 @@
   </div>
 
   <div style="padding: 0 16px 16px;">
+    <!-- Populate scan details from database -->
     <p><b>Engine:</b> {{ scan.engine }}</p>
     <p><b>Status:</b> {{ scan.status }}</p>
     <p><b>Progress:</b> {{ scan.progress }}%</p>
@@ -31,11 +33,12 @@
     {% endif %}
 
     <hr style="margin: 16px 0;">
-
+    <!-- Populate GVM details if available -->
     {% if scan.engine == "GVM" %}
       <h3>GVM Details</h3>
       <p><b>Task ID:</b> {{ scan.gvm_task_id if scan.gvm_task_id else "-" }}</p>
       <p><b>Report ID:</b> {{ scan.gvm_report_id if scan.gvm_report_id else "-" }}</p>
+      <!-- Initiate findings parsing if button is pressed by calling /scans/id/parse_findings route-->
       <form method="POST" action="/scans/{{ scan.scan_id }}/parse_findings" style="margin-top:12px;">
   <button class="btn btn-primary" type="submit">
     Store Findings & Create Tickets (where CVSS Scores are 5 or higher)
@@ -44,30 +47,31 @@
 </form>
 
 <h3>Live Findings Direct from GVM</h3>
-
 <div class="card" style="padding: 12px; max-height: 280px; overflow-y: auto;">
+  <!-- Iterate through findings table dictionary list if present -->
   {% if findings and findings|length > 0 %}
     {% for f in findings %}
       <div style="margin-bottom: 12px;">
         <p style="margin: 0;">
-          <b>{{ f.nvt_name if f.nvt_name else "Unnamed finding" }}</b>
+          <!-- Title findings with NVT name -->
+          <b>{{ f.nvt_name if f.nvt_name else "Unnamed" }}</b>
         </p>
-
         <p style="margin: 4px 0 0;">
+          <!-- Show port and CVSS on same line -->
           <b>Port:</b> {{ f.port if f.port else "-" }}
           &nbsp;|&nbsp;
           <b>CVSS:</b> {{ f.cvss_score }}
         </p>
-
         <p style="margin: 4px 0 0;">
           <b>CVEs:</b>
+          <!-- Handle multiple CVEs if available -->
           {% if f.cves and f.cves|length > 0 %}
             {{ f.cves|join(", ") }}
           {% else %}
             None
           {% endif %}
         </p>
-
+        <!-- Display solution if available -->
         {% if f.solution %}
           <p style="margin: 6px 0 0;">
             <b>Solution:</b> {{ f.solution }}
@@ -81,26 +85,19 @@
     <p style="margin: 0;"><i>No findings available yet.</i></p>
   {% endif %}
 </div>
-
+    <!-- Handle AI Scanner Outputs-->
     {% elif scan.engine == "AI" %}
       <h3>AI Scanner Output</h3>
-{% if scan.engine == "AI" %}
-
-  <a class="btn btn-primary" href="/scans/{{ scan.scan_id }}/ticket/new">
-    Create Ticket (Editable)
-  </a>
-
-{% endif %}
+      <!-- This is where AI output will go-->
       {% if scan.ai_verdict %}
         <p><b>AI Verdict:</b></p>
         <div class="card" style="padding: 12px; margin-bottom: 12px;">
           <pre style="white-space: pre-wrap; margin: 0;">{{ scan.ai_verdict }}</pre>
         </div>
-        
       {% else %}
         <p><i>No AI output stored yet.</i></p>
       {% endif %}
-    
+      <!-- Show raw scanner output unparsed -->
       {% if scan.scanner_output %}
         <p><b>Raw Output:</b></p>
         <div class="card" style="padding: 12px;">
@@ -109,7 +106,7 @@
       {% else %}
         <p><i>No raw output stored yet.</i></p>
       {% endif %}
-
+    <!-- Handle edge cases probably won't need this -->
     {% else %}
       <p><i>Unknown scan engine.</i></p>
     {% endif %}

@@ -7,6 +7,7 @@
 {% block page_subtitle %}Register and manage hosts{% endblock %}
 
 {% block content %}
+<!-- Show error message passed to template if error occurs in assets route-->
 {% if error %}
 <div class="card" style="margin-bottom:20px; color:#ff6b6b;">
   {{ error }}
@@ -14,6 +15,7 @@
 {% endif %}
 
 {% if success %}
+<!-- Show success message passed to template if recieved -->
 <div class="card" style="margin-bottom:20px; color:#4ade80;">
   {{ success }}
 </div>
@@ -21,6 +23,7 @@
       <main class="content">
         <section class="grid two-col">
           <article class="card">
+            <!-- Filter options (no functionality yet)-->
             <div class="card-head">
               <div><h2>Asset Inventory</h2><p>Assets being monitored by RiskForge</p></div>
               <div class="card-actions">
@@ -46,10 +49,11 @@
                   </tr>
                 </thead>
                     <tbody>
+                    <!-- Iterate through assets table, display information and generate link to view asset details-->
                     {% for asset in assets %}
                     <tr>
                         <td>
-                        <a href="{{ url_for('asset_detail', asset_id=asset.asset_id) }}">
+                        <a href="/assets/{{ asset.asset_id }}">
                             {{ asset.name }} </a> </td>
                         <td>{{ asset.ip_address }}</td>
                         <td>{{ asset.asset_type.replace("_", " ").title() }}</td>
@@ -71,7 +75,7 @@
     </div>
     <span class="badge">Form</span>
   </div>
-
+  <!-- Call POST route within /assets if form is submitted -->
   <form method="POST" action="/assets">
     <div style="padding: 0 16px 16px;">
       <label class="cell-sub">Asset name</label>

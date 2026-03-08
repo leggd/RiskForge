@@ -8,23 +8,24 @@
 <article class="card">
 <div class="card-head">
   <div>
+    <!-- Populate asset name and IP address in card header-->
     <h2>{{ asset.name }}</h2>
     <p>{{ asset.ip_address }}</p>
   </div>
-
+  <!-- Display edit button and other page elements if user is just viewing the asset -->
   {% if not edit_mode %}
     <div class="card-actions">
       <a class="btn btn-primary" href="/assets/{{ asset.asset_id }}?edit=1">
         Edit
       </a>
-
+      <!-- If asset has not been marked as retired previously, show button to retire -->
       {% if not asset.retired %}
         <form method="POST"
               action="/assets/{{ asset.asset_id }}/retire"
               style="margin:0;">
           <button class="btn btn-ghost"
                   type="submit"
-                  onclick="return confirm('Retire this asset? It will be hidden from the assets list.');">
+                  onclick="return confirm('Retire this asset? It will be hidden from the assets list');">
             Retire
           </button>
         </form>
@@ -34,10 +35,12 @@
     </div>
   {% endif %}
 </div>
-
+  <!-- If edit mode enable, allow entry and changing of asset details -->
   {% if edit_mode %}
+  <!-- Call assets/id/update POST route if form is submitted -->
     <form method="POST" action="/assets/{{ asset.asset_id }}/update">
       <div style="padding: 0 16px 16px;">
+        <!-- Prefill editable text boxes with information currently held in database -->
         <label class="cell-sub">Asset name</label>
         <input class="select" style="width:100%; margin:8px 0 12px;"
                name="name" value="{{ asset.name }}" required>
@@ -48,6 +51,7 @@
 
         <label class="cell-sub">Asset Type</label>
         <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_type" required>
+          <!-- Prefill Asset Type options depending on current selection held in the database -->
           <option value="WEB_SERVER" {% if asset.asset_type == "WEB_SERVER" %}selected{% endif %}>Web Server</option>
           <option value="FILE_SERVER" {% if asset.asset_type == "FILE_SERVER" %}selected{% endif %}>File Server</option>
           <option value="DATABASE_SERVER" {% if asset.asset_type == "DATABASE_SERVER" %}selected{% endif %}>Database Server</option>
@@ -56,12 +60,14 @@
         </select>
 
         <label class="cell-sub">Exposure</label>
+        <!-- Prefill Exposure options depending on current selection held in the database -->
         <select class="select" style="width:100%; margin:8px 0 12px;" name="exposure" required>
           <option value="PUBLIC" {% if asset.exposure == "PUBLIC" %}selected{% endif %}>Public</option>
           <option value="PRIVATE" {% if asset.exposure == "PRIVATE" %}selected{% endif %}>Private</option>
         </select>
 
         <label class="cell-sub">Criticality</label>
+        <!-- Prefill Criticality options depending on current selection held in the database -->
         <select class="select" style="width:100%; margin:8px 0 16px;" name="criticality" required>
           <option value="LOW" {% if asset.criticality == "LOW" %}selected{% endif %}>Low</option>
           <option value="MEDIUM" {% if asset.criticality == "MEDIUM" %}selected{% endif %}>Medium</option>
@@ -76,6 +82,7 @@
     </form>
   {% else %}
     <div style="padding: 0 16px 16px;">
+      <!-- If not editing details show asset details as held on database -->
       <p><b>Type:</b> {{ asset.asset_type }}</p>
       <p><b>Exposure:</b> {{ asset.exposure }}</p>
       <p><b>Criticality:</b> {{ asset.criticality }}</p>

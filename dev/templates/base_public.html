@@ -1,4 +1,4 @@
-<!-- templates/base_public.html -->
+<!-- HTML base for login page only-->
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,12 +7,10 @@
 
   <title>{% block title %}Riskforge{% endblock %}</title>
 
-  <!-- Use the same stylesheet so login matches your theme -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="stylesheet" href="/static/styles.css">
 </head>
 
 <body>
-  <!-- Minimal layout: centered content -->
   <main style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;">
     {% block content %}{% endblock %}
   </main>

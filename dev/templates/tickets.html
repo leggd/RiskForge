@@ -31,13 +31,16 @@
         </tr>
       </thead>
       <tbody>
+        <!-- Iterate through tickets list -->
         {% for t in tickets %}
         <tr>
           <td>
+            <!-- Generate ticket detail link based on ticket_id -->
             <a href="/tickets/{{ t.ticket_id }}">
               {{ t.title }}
             </a>
           </td>
+          <!-- Populate ticket information -->
           <td>{{ t.asset_name }} ({{ t.asset_ip }})</td>
           <td>{{ t.priority }}</td>
           <td>{{ t.status }}</td>
@@ -45,7 +48,7 @@
           <td>{{ t.closed_at if t.closed_at else "-" }}</td>
         </tr>
         {% endfor %}
-
+        <!-- Handle empty ticket list -->
         {% if tickets|length == 0 %}
         <tr>
           <td colspan="6" style="text-align:center;">
