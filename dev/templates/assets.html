@@ -20,8 +20,11 @@
   {{ success }}
 </div>
 {% endif %}
+
       <main class="content">
-        <section class="grid two-col">
+        <section class="grid three-col">
+
+          <!-- Asset Inventory Table -->
           <article class="card">
             <!-- Filter options (no functionality yet)-->
             <div class="card-head">
@@ -48,67 +51,109 @@
                     <th class="right">Last scan</th>
                   </tr>
                 </thead>
-                    <tbody>
-                    <!-- Iterate through assets table, display information and generate link to view asset details-->
-                    {% for asset in assets %}
-                    <tr>
-                        <td>
-                        <a href="/assets/{{ asset.asset_id }}">
-                            {{ asset.name }} </a> </td>
-                        <td>{{ asset.ip_address }}</td>
-                        <td>{{ asset.asset_type.replace("_", " ").title() }}</td>
-                        <td>{{ asset.exposure }}</td>
-                        <td>{{ asset.criticality.replace("_", " ").title() }}</td>
-                        <td>{{ asset.last_scanned_at if asset.last_scanned_at else "Never" }}</td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
+                <tbody>
+                  {% for asset in assets %}
+                  <tr>
+                    <td>
+                      <a href="/assets/{{ asset.asset_id }}">{{ asset.name }}</a>
+                    </td>
+                    <td>{{ asset.ip_address }}</td>
+                    <td>{{ asset.asset_type.replace("_", " ").title() }}</td>
+                    <td>{{ asset.exposure }}</td>
+                    <td>{{ asset.criticality.replace("_", " ").title() }}</td>
+                    <td>{{ asset.last_scanned_at if asset.last_scanned_at else "Never" }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
               </table>
             </div>
           </article>
 
+          <!-- Network Discovery -->
           <article class="card">
-  <div class="card-head">
-    <div>
-      <h2>Add Asset</h2>
-      <p>Register a new host in the inventory</p>
-    </div>
-    <span class="badge">Form</span>
-  </div>
-  <!-- Call POST route within /assets if form is submitted -->
-  <form method="POST" action="/assets">
-    <div style="padding: 0 16px 16px;">
-      <label class="cell-sub">Asset name</label>
-      <input class="select" style="width:100%; margin:8px 0 12px;" name="name" placeholder="e.g., web-02" required/>
-      <label class="cell-sub">IP address</label>
-      <input class="select" style="width:100%; margin:8px 0 12px;" name="ip_address" placeholder="e.g., 192.168.10.11" required/>
-      <label class="cell-sub">Asset type</label>
-      <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_type" required>
-        <option value="WEB_SERVER">Web Server</option>
-        <option value="FILE_SERVER">File Server</option>
-        <option value="DATABASE_SERVER">Database Server</option>
-        <option value="WORKSTATION">Workstation</option>
-        <option value="OTHER">Other</option>
-      </select>
-      <label class="cell-sub">Exposure</label>
-      <select class="select" style="width:100%; margin:8px 0 12px;" name="exposure" required>
-        <option value="PUBLIC">Public</option>
-        <option value="PRIVATE">Private</option>
-      </select>
-      <label class="cell-sub">Criticality</label>
-      <select class="select" style="width:100%; margin:8px 0 16px;" name="criticality" required>
-        <option value="LOW">Low</option>
-        <option value="MEDIUM">Medium</option>
-        <option value="HIGH">High</option>
-        <option value="MISSION_CRITICAL">Mission-critical</option>
-      </select>
-      <div class="row-actions">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <button class="btn btn-ghost" type="reset">Clear</button>
-      </div>
-    </div>
-  </form>
-</article>
+            <div class="card-head">
+              <div>
+                <h2>Network Discovery</h2>
+                <p>Live hosts on 10.0.96.0/24 <br>(Click IP address to pre-fill Add Asset Form)</p>              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>IP Address</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if discovered_hosts and discovered_hosts|length > 0 %}
+                    {% for ip in discovered_hosts %}
+                    <tr>
+                      <td>
+                        <a href="/assets?ip={{ ip }}">{{ ip }}</a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr>
+                      <td style="text-align:center;" class="cell-sub">
+                        No hosts found — Kali may be unreachable
+                      </td>
+                    </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <!-- Add Asset Form -->
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2>Add Asset</h2>
+                <p>Register a new host in the inventory</p>
+              </div>
+              <span class="badge">Form</span>
+            </div>
+            <form method="POST" action="/assets">
+              <div style="padding: 0 16px 16px;">
+                <label class="cell-sub">Asset name</label>
+                <input class="select" style="width:100%; margin:8px 0 12px;" name="name"
+                  placeholder="e.g., web-02"
+                  value="{{ selected_os if selected_os else '' }}"
+                  required/>
+                <label class="cell-sub">IP address</label>
+                <input class="select" style="width:100%; margin:8px 0 12px;" name="ip_address"
+                  placeholder="e.g., 192.168.10.11"
+                  value="{{ selected_ip if selected_ip else '' }}"
+                  required/>
+                <label class="cell-sub">Asset type</label>
+                <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_type" required>
+                  <option value="WEB_SERVER">Web Server</option>
+                  <option value="FILE_SERVER">File Server</option>
+                  <option value="DATABASE_SERVER">Database Server</option>
+                  <option value="WORKSTATION">Workstation</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                <label class="cell-sub">Exposure</label>
+                <select class="select" style="width:100%; margin:8px 0 12px;" name="exposure" required>
+                  <option value="PUBLIC">Public</option>
+                  <option value="PRIVATE">Private</option>
+                </select>
+                <label class="cell-sub">Criticality</label>
+                <select class="select" style="width:100%; margin:8px 0 16px;" name="criticality" required>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="MISSION_CRITICAL">Mission-critical</option>
+                </select>
+                <div class="row-actions">
+                  <button class="btn btn-primary" type="submit">Save</button>
+                  <button class="btn btn-ghost" type="reset">Clear</button>
+                </div>
+              </div>
+            </form>
+          </article>
+
         </section>
       </main>
 {% endblock %}

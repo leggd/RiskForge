@@ -281,6 +281,8 @@
     border-bottom: 1px solid rgba(255,255,255,0.06);
     vertical-align: top;
   }
+  .three-col{grid-template-columns: 2fr 0.5fr 1fr; align-items:start}
+
   .right{text-align:right}
   .cell-strong{font-weight:800}
   .cell-sub{color: var(--muted); font-size: 12px; margin-top: 2px}

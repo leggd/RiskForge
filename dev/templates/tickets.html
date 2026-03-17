@@ -25,6 +25,7 @@
           <th>Title</th>
           <th>Asset</th>
           <th>Priority</th>
+          <th>RiskForge Score</th>
           <th>Status</th>
           <th>Created</th>
           <th>Closed</th>
@@ -43,6 +44,7 @@
           <!-- Populate ticket information -->
           <td>{{ t.asset_name }} ({{ t.asset_ip }})</td>
           <td>{{ t.priority }}</td>
+          <td>{{ t.riskforge_score }}</td>
           <td>{{ t.status }}</td>
           <td>{{ t.created_at }}</td>
           <td>{{ t.closed_at if t.closed_at else "-" }}</td>

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import bcrypt
 from pymysql.err import IntegrityError
 from services.gvm_service import start_gvm_scan, get_gvm_task_status
-from services.remote_scanner import run_ai_scan
+from services.remote_scanner import run_ping_sweep, run_os_detection, run_ai_scan
 from services.gvm_service import get_gvm_findings
 from services.findings_service import store_findings
 import json
@@ -169,16 +169,168 @@ def login():
 @app.route("/dashboard")
 def dashboard():
     """
-    Display main dashboard page for authenticate users,
-    Redirects to login page if there is no active session
+    Display main dashboard page for authenticated users
+    Queries platform metrics and passes them to the template
     """
     if "user_id" not in session:
         return redirect("/login")
-    
+
+    try:
+        # Obtain active asset count
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM assets
+        WHERE retired = FALSE
+        """
+        active_assets = execute_query(sql, None, "one")
+        active_assets = active_assets["count"]
+
+        # Obtain retired asset count
+        sql = """
+        SELECT COUNT(*) AS count 
+        FROM assets 
+        WHERE retired = TRUE
+        """
+        retired_assets = execute_query(sql, None, "one")
+        retired_assets = retired_assets["count"]
+
+        # Calculate total amount of assets regardless of status
+        total_assets = active_assets + retired_assets
+
+        # Obtain total scan count
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM scans
+        """
+        total_scans = execute_query(sql, None, "one")
+        total_scans = total_scans["count"]
+
+        # Obtain number of scans in progress
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM scans
+        WHERE status NOT IN ('Done', 'Stopped', 'Interrupted', 'Aborted', 'Failed')
+        """
+        active_scans = execute_query(sql, None, "one")
+        active_scans = active_scans["count"]
+
+        # Obtain all findings count
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM findings
+        """
+        total_findings = execute_query(sql, None, "one")
+        total_findings = total_findings["count"]
+
+        # Obtain findings with highest cvss score
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM findings
+        WHERE cvss_score >= 9
+        """
+        critical_findings = execute_query(sql, None, "one")
+        critical_findings = critical_findings["count"]
+
+        # Obtain findings with high-ish score
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM findings 
+        WHERE cvss_score >= 7 AND cvss_score < 9
+        """
+        high_findings = execute_query(sql, None, "one")
+        high_findings = high_findings["count"]
+
+        # Obtain count of open tickets
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM tickets
+        WHERE status = 'Open'
+        """
+        open_tickets = execute_query(sql, None, "one")
+        open_tickets = open_tickets["count"]
+
+        # Obtain count of in progress tickets
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM tickets
+        WHERE status = 'In Progress'
+        """
+        in_progress_tickets = execute_query(sql, None, "one")
+        in_progress_tickets = in_progress_tickets["count"]
+
+        # Obtain count of open critical tickets
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM tickets
+        WHERE status = 'Open'
+        AND priority = 'Critical'
+        """
+        critical_tickets = execute_query(sql, None, "one")
+        critical_tickets = critical_tickets["count"]
+
+        # Obtain count of open high tickets
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM tickets
+        WHERE status = 'Open'
+        AND priority = 'High'
+        """
+        high_tickets = execute_query(sql, None, "one")
+        high_tickets = high_tickets["count"]
+
+        # Obtain count of open medium tickets
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM tickets
+        WHERE status = 'Open'
+        AND priority = 'Medium'
+        """
+        medium_tickets = execute_query(sql, None, "one")
+        medium_tickets = medium_tickets["count"]
+
+        # Obtain count of open low tickets
+        sql = """
+        SELECT COUNT(*) AS count
+        FROM tickets
+        WHERE status = 'Open'
+        AND priority = 'Low'
+        """
+        low_tickets = execute_query(sql, None, "one")
+        low_tickets = low_tickets["count"]
+
+
+    except Exception as e:
+        # On DB error, pass empty/zero data so the page still renders
+        print("Dashboard DB error:", e)
+        active_assets = retired_assets = total_assets = 0
+        total_scans = active_scans = 0
+        total_findings = critical_findings = high_findings = 0
+        open_tickets = in_progress_tickets = 0
+        critical_tickets = high_tickets = medium_tickets = low_tickets = 0
+
+    metrics = {
+        "total_assets":        total_assets,
+        "active_assets":       active_assets,
+        "retired_assets":      retired_assets,
+        "total_scans":         total_scans,
+        "active_scans":        active_scans,
+        "total_findings":      total_findings,
+        "critical_findings":   critical_findings,
+        "high_findings":       high_findings,
+        "open_tickets":        open_tickets,
+        "in_progress_tickets": in_progress_tickets,
+        "critical_tickets":    critical_tickets,
+        "high_tickets":        high_tickets,
+        "medium_tickets":      medium_tickets,
+        "low_tickets":         low_tickets,
+    }
+
     return render_template(
         "dashboard.html",
-        username=session['username'],
-        role=session['role'])
+        metrics=metrics,
+        username=session["username"],
+        role=session["role"]
+    )
 
 @app.route("/logout")
 def logout():
@@ -203,7 +355,8 @@ def assets():
     Display and manage active assets.
 
     On GET request it retrieves and displays all non-retired assets
-    On POST request it validates and inserts new assets into the database
+    and runs a ping sweep to discover hosts on the network.
+    On POST request it validates and inserts new assets into the database.
     """
     # Require Authentication
     if "user_id" not in session:
@@ -235,46 +388,61 @@ def assets():
                     SELECT asset_id FROM assets
                     WHERE ip_address = %s OR name = %s
                     """
-                    exists = execute_query(sql,(ip_address,name),"one")
+                    exists = execute_query(sql, (ip_address, name), "one")
                     if exists:
                         error = "Asset with that name or IP address already exists"
-                except:
-                    try:
-                        # Insert new asset record to database
-                        sql = """
-                        INSERT INTO assets (
-                        name, 
-                        ip_address,
-                        asset_type,
-                        exposure,
-                        criticality
-                        ) 
-                        VALUES (%s, %s, %s, %s, %s)
-                        """
-                        asset_id = execute_query(
-                            sql, 
-                            (
-                                name,
-                                ip_address,
-                                asset_type,
-                                exposure,
-                                criticality
+                    else:
+                        try:
+                            # Insert new asset record to database
+                            sql = """
+                            INSERT INTO assets (
+                            name, 
+                            ip_address,
+                            asset_type,
+                            exposure,
+                            criticality
+                            ) 
+                            VALUES (%s, %s, %s, %s, %s)
+                            """
+                            asset_id = execute_query(
+                                sql, 
+                                (
+                                    name,
+                                    ip_address,
+                                    asset_type,
+                                    exposure,
+                                    criticality
+                                )
                             )
-                        )
 
-                        log_event(
-                            session["user_id"],
-                            "CREATE_ASSET",
-                            "ASSET",
-                            asset_id,
-                            f"Created asset name={name}, ip={ip_address}"
-                        )
+                            log_event(
+                                session["user_id"],
+                                "CREATE_ASSET",
+                                "ASSET",
+                                asset_id,
+                                "Created asset name=" + name + ", ip=" + ip_address
+                            )
 
-                        success = "Asset added successfully."
-                    
-                    except Exception as e:
-                        error = "Error adding asset: " + str(e)
-    
+                            success = "Asset added successfully."   
+                        except Exception as e:
+                            error = "Error adding asset: " + str(e)
+                except Exception as e:
+                    error = "Wider Error: " + str(e)
+
+    # Run ping sweep to discover hosts on the network
+    # Returns empty list if Kali is unreachable
+    subnet = "10.0.96.0/24"
+    discovered_hosts = run_ping_sweep(subnet)
+
+    # If a specific IP was clicked, run OS detection on it
+    selected_ip = request.args.get("ip")
+    selected_os = None
+
+    if selected_ip:
+        result = run_os_detection(selected_ip)
+        if result:
+            selected_os = result["os"]
+
     # Retrieve all active assets to display in the table
     try:
         sql = """
@@ -282,7 +450,7 @@ def assets():
         WHERE retired = FALSE
         ORDER BY created_at DESC
         """        
-        asset_list = execute_query(sql,None,"all")
+        asset_list = execute_query(sql, None, "all")
 
     # Catch DB error, create empty asset list and generate error string
     except Exception as e:
@@ -295,8 +463,12 @@ def assets():
         assets=asset_list,
         error=error,
         success=success,
+        discovered_hosts=discovered_hosts,
+        selected_ip=selected_ip,
+        selected_os=selected_os,
         username=session["username"],
-        role=session["role"])
+        role=session["role"]
+    )
 
 @app.route("/assets/<int:asset_id>", methods=["GET"])
 def asset_detail(asset_id):
@@ -692,7 +864,6 @@ def scans():
         JOIN assets ON scans.asset_id = assets.asset_id
         ORDER BY scans.started_at DESC
         """
-
         scan_list = execute_query(sql,None,"all")
 
         # Filter out retired assets
@@ -717,16 +888,13 @@ def scans():
         username=session["username"],
         role=session["role"])
 
-
 @app.route("/scans/<int:scan_id>", methods=["GET"])
 def scan_detail(scan_id):
     """
     Displays detailed information for a specific scan.
-
     Enables optional refresh via ?refresh=1 parameter
     to update progress for active scans.
     """
-    # Require authentication
     if "user_id" not in session:
         return redirect("/login")
 
@@ -742,7 +910,7 @@ def scan_detail(scan_id):
         JOIN assets ON scans.asset_id = assets.asset_id
         WHERE scans.scan_id = %s
         """
-        scan = execute_query(sql,(scan_id),"one")
+        scan = execute_query(sql, (scan_id,), "one")
 
         if scan is None:
             return "Scan not found", 404
@@ -762,14 +930,14 @@ def scan_detail(scan_id):
                         finished_at=NOW()
                         WHERE scan_id=%s
                         """
-                        execute_query(sql,(status,progress,scan_id))
+                        execute_query(sql, (status, progress, scan_id))
                     else:
                         sql = """
                         UPDATE scans
                         SET status=%s, progress=%s
                         WHERE scan_id=%s
                         """
-                        execute_query(sql,(status,progress,scan_id))
+                        execute_query(sql, (status, progress, scan_id))
 
             # Re-fetch scan after refresh update
             sql = """
@@ -781,9 +949,9 @@ def scan_detail(scan_id):
             JOIN assets ON scans.asset_id = assets.asset_id
             WHERE scans.scan_id = %s
             """
-            scan = execute_query(sql,(scan_id),"one")
+            scan = execute_query(sql, (scan_id,), "one")
 
-        # Obtain findings for display only
+        # Fetch live findings from GVM for display
         findings = []
         FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
         if (scan["engine"] == "GVM"
@@ -795,10 +963,20 @@ def scan_detail(scan_id):
                 print("Error fetching GVM findings: " + str(e))
                 findings = []
 
+        # Fetch stored findings from database for this scan
+        sql = """
+        SELECT nvt_name, port, cvss_score, riskforge_score, cves, solution
+        FROM findings
+        WHERE scan_id = %s
+        ORDER BY riskforge_score DESC
+        """
+        stored_findings = execute_query(sql, (scan_id,), "all")
+
         return render_template(
             "scan_detail.html",
             scan=scan,
             findings=findings,
+            stored_findings=stored_findings,
             username=session["username"],
             role=session["role"],
         )
@@ -840,7 +1018,7 @@ def parse_findings(scan_id):
             asset_id=scan["asset_id"],
             findings=findings,
             created_by=session["user_id"],
-            min_cvss=5.0,
+            min_score=5.0,
         )
 
         return redirect(f"/scans/{scan_id}")
@@ -866,6 +1044,7 @@ def tickets():
         tickets.status,
         tickets.created_at,
         tickets.closed_at,
+        tickets.riskforge_score,
         assets.name AS asset_name,
         assets.ip_address AS asset_ip
         FROM tickets
@@ -953,7 +1132,7 @@ def update_ticket(ticket_id):
             UPDATE tickets
             SET status=%s,
             closed_reason=NULL,
-            closed_at=NULL,
+            closed_at=NULL
             WHERE ticket_id=%s
             """
             execute_query(sql, (status, ticket_id))
