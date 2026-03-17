@@ -1115,6 +1115,18 @@ def update_ticket(ticket_id):
         return redirect(f"/tickets/{ticket_id}?err=reason_required")
 
     try:
+        sql = """
+        SELECT status
+        FROM tickets
+        WHERE ticket_id = %s
+        """
+        current_ticket = execute_query(sql, (ticket_id), "one")
+
+        if current_ticket is None:
+            return "Ticket not found"
+
+        old_status = current_ticket["status"]
+
         # If closing set closed_at and store reason values
         if status == "Closed":
             sql = """
@@ -1124,24 +1136,39 @@ def update_ticket(ticket_id):
             closed_at=NOW()
             WHERE ticket_id=%s
             """
-            execute_query(sql,(status, closed_reason, ticket_id))
+            execute_query(sql,(status, closed_reason, ticket_id,))
+
+            log_event(
+                session["user_id"],
+                "TICKET_CLOSED",
+                "TICKET",
+                ticket_id,
+                f"Ticket closed. Reason: {closed_reason}"
+            )
 
         else:
             # If re-opening clear close fields
             sql = """
             UPDATE tickets
             SET status=%s,
-            closed_reason=NULL,
-            closed_at=NULL
+                closed_reason=NULL,
+                closed_at=NULL
             WHERE ticket_id=%s
             """
-            execute_query(sql, (status, ticket_id))
+            execute_query(sql, (status, ticket_id,))
        
+        if old_status != status:
+            log_event(
+                session["user_id"],
+                "TICKET_STATUS_CHANGE",
+                "TICKET",
+                ticket_id,
+                f"Ticket status changed from {old_status} to {status}"
+            )
         return redirect(f"/tickets/{ticket_id}")
-
+    
     except Exception as e:
         return "Error updating ticket: " + str(e)
-    
 # Run Server
 if __name__ == "__main__":
     app.run(debug=True)
