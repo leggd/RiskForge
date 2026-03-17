@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vuln Platform — Assets</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div><div class="brand-name">Vuln Platform</div><div class="brand-sub">Enterprise Console</div></div>
+      </div>
+      <nav class="nav">
+        <div class="nav-section">Manage</div>
+        <a class="nav-item" href="dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+        <a class="nav-item active" href="assets.html"><span class="nav-dot"></span>Assets</a>
+        <a class="nav-item" href="scans.html"><span class="nav-dot"></span>Scans</a>
+        <a class="nav-item" href="tickets.html"><span class="nav-dot"></span>Tickets</a>
+        <div class="nav-section">Insights</div>
+        <a class="nav-item" href="reports.html"><span class="nav-dot"></span>Reports</a>
+        <a class="nav-item" href="trends.html"><span class="nav-dot"></span>Trends</a>
+        <div class="nav-section">Admin</div>
+        <a class="nav-item" href="users.html"><span class="nav-dot"></span>Users</a>
+        <a class="nav-item" href="settings.html"><span class="nav-dot"></span>Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="mini-card">
+          <div class="mini-title">Inventory</div>
+          <div class="mini-value">34 assets • 6 public</div>
+          <button class="btn btn-ghost" type="button">Import</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" type="button">☰</button>
+          <div class="page-title"><h1>Assets</h1><p>Register and manage hosts</p></div>
+        </div>
+        <div class="topbar-right">
+          <label class="search"><span class="search-icon">⌕</span><input type="search" placeholder="Search assets…" /></label>
+          <button class="btn btn-primary" type="button">Add Asset</button>
+          <div class="user"><div class="avatar">A</div><div><div class="user-name">admin</div><div class="user-role">Administrator</div></div></div>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="grid two-col">
+          <article class="card">
+            <div class="card-head">
+              <div><h2>Asset Inventory</h2><p>Dummy data (PoC)</p></div>
+              <div class="card-actions">
+                <select class="select">
+                  <option>All</option><option>Public</option><option>Private</option>
+                </select>
+                <select class="select">
+                  <option>All types</option><option>Web Server</option><option>File Server</option><option>Workstation</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>IP</th>
+                    <th>Type</th>
+                    <th>Exposure</th>
+                    <th>Criticality</th>
+                    <th class="right">Last scan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr tabindex="0">
+                    <td><div class="cell-strong">web-01</div><div class="cell-sub">DMZ</div></td>
+                    <td class="cell-sub">192.168.10.10</td>
+                    <td class="cell-sub">Web Server</td>
+                    <td><span class="badge badge-high">Public</span></td>
+                    <td><span class="badge">High</span></td>
+                    <td class="right cell-sub">Today 01:12</td>
+                  </tr>
+                  <tr tabindex="0">
+                    <td><div class="cell-strong">file-01</div><div class="cell-sub">Internal</div></td>
+                    <td class="cell-sub">192.168.20.15</td>
+                    <td class="cell-sub">File Server</td>
+                    <td><span class="badge">Private</span></td>
+                    <td><span class="badge badge-med">Medium</span></td>
+                    <td class="right cell-sub">Yesterday</td>
+                  </tr>
+                  <tr tabindex="0">
+                    <td><div class="cell-strong">ws-14</div><div class="cell-sub">Finance</div></td>
+                    <td class="cell-sub">192.168.30.44</td>
+                    <td class="cell-sub">Workstation</td>
+                    <td><span class="badge">Private</span></td>
+                    <td><span class="badge badge-critical">Mission</span></td>
+                    <td class="right cell-sub">3d ago</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div><h2>Add Asset (Mock)</h2><p>This would POST to PHP later</p></div>
+              <span class="badge">Form</span>
+            </div>
+
+            <div style="padding: 0 16px 16px;">
+              <label class="cell-sub">Asset name</label>
+              <input class="select" style="width:100%; margin:8px 0 12px;" placeholder="e.g., web-02" />
+
+              <label class="cell-sub">IP address</label>
+              <input class="select" style="width:100%; margin:8px 0 12px;" placeholder="e.g., 192.168.10.11" />
+
+              <label class="cell-sub">Asset type</label>
+              <select class="select" style="width:100%; margin:8px 0 12px;">
+                <option>Web Server</option><option>File Server</option><option>Database</option><option>Workstation</option>
+              </select>
+
+              <label class="cell-sub">Exposure</label>
+              <select class="select" style="width:100%; margin:8px 0 12px;">
+                <option>Public</option><option>Private</option>
+              </select>
+
+              <label class="cell-sub">Criticality</label>
+              <select class="select" style="width:100%; margin:8px 0 16px;">
+                <option>Low</option><option>Medium</option><option>High</option><option>Mission-critical</option>
+              </select>
+
+              <div class="row-actions">
+                <button class="btn btn-primary" type="button">Save</button>
+                <button class="btn btn-ghost" type="button">Clear</button>
+              </div>
+
+              <p class="cell-sub" style="margin-top:12px;">
+                Next step: convert this to a real <code>&lt;form method="POST"&gt;</code> in PHP.
+              </p>
+            </div>
+          </article>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span class="cell-sub">© Vuln Platform • Internal use</span>
+        <span class="cell-sub">PoC navigation enabled</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

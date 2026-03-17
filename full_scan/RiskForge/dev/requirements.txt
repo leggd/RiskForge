@@ -1,0 +1,7 @@
+Flask
+PyMySQL
+python-dotenv
+bcrypt
+cryptography
+python-gvm
+lxml

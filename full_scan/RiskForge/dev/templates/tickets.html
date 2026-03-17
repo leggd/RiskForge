@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Riskforge — Tickets{% endblock %}
+{% block page_h1 %}Tickets{% endblock %}
+{% block page_subtitle %}Remediation workflow{% endblock %}
+
+{% block content %}
+
+<article class="card">
+  <div class="card-head">
+    <div>
+      <h2>Ticket List</h2>
+      <p>All tickets (newest first)</p>
+    </div>
+
+    <div>
+      <a class="btn btn-ghost" href="/scans">Back to Scans</a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Asset</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Closed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Iterate through tickets list -->
+        {% for t in tickets %}
+        <tr>
+          <td>
+            <!-- Generate ticket detail link based on ticket_id -->
+            <a href="/tickets/{{ t.ticket_id }}">
+              {{ t.title }}
+            </a>
+          </td>
+          <!-- Populate ticket information -->
+          <td>{{ t.asset_name }} ({{ t.asset_ip }})</td>
+          <td>{{ t.priority }}</td>
+          <td>{{ t.status }}</td>
+          <td>{{ t.created_at }}</td>
+          <td>-</td>
+        </tr>
+        {% endfor %}
+        <!-- Handle empty ticket list -->
+        {% if tickets|length == 0 %}
+        <tr>
+          <td colspan="6" style="text-align:center;">
+            No tickets yet.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</article>
+
+{% endblock %}

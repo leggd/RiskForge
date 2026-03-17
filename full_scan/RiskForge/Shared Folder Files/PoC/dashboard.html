@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vuln Platform — Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="brand-name">Vuln Platform</div>
+          <div class="brand-sub">Enterprise Console</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-section">Manage</div>
+        <a class="nav-item active" href="dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+        <a class="nav-item" href="assets.html"><span class="nav-dot"></span>Assets</a>
+        <a class="nav-item" href="scans.html"><span class="nav-dot"></span>Scans</a>
+        <a class="nav-item" href="tickets.html"><span class="nav-dot"></span>Tickets</a>
+
+        <div class="nav-section">Insights</div>
+        <a class="nav-item" href="reports.html"><span class="nav-dot"></span>Reports</a>
+        <a class="nav-item" href="trends.html"><span class="nav-dot"></span>Trends</a>
+
+        <div class="nav-section">Admin</div>
+        <a class="nav-item" href="users.html"><span class="nav-dot"></span>Users</a>
+        <a class="nav-item" href="settings.html"><span class="nav-dot"></span>Settings</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="mini-card">
+          <div class="mini-title">Scan schedule</div>
+          <div class="mini-value">Weekly • Sun 02:00</div>
+          <button class="btn btn-ghost" type="button">Change</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" type="button" aria-label="Open menu">☰</button>
+          <div class="page-title">
+            <h1>Dashboard</h1>
+            <p>Security posture overview</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <label class="search">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input type="search" placeholder="Search assets, tickets, CVEs…" />
+          </label>
+
+          <a class="btn btn-primary" href="scans.html">New Scan</a>
+
+          <div class="user">
+            <div class="avatar" aria-hidden="true">A</div>
+            <div class="user-meta">
+              <div class="user-name">admin</div>
+              <div class="user-role">Administrator</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="grid kpis">
+          <article class="card kpi">
+            <div class="kpi-top">
+              <div class="kpi-label">Open Critical</div>
+              <span class="badge badge-critical">Critical</span>
+            </div>
+            <div class="kpi-value">7</div>
+            <div class="kpi-sub">+2 since last scan</div>
+          </article>
+
+          <article class="card kpi">
+            <div class="kpi-top">
+              <div class="kpi-label">Patch Compliance</div>
+              <span class="badge badge-good">OK</span>
+            </div>
+            <div class="kpi-value">82%</div>
+            <div class="kpi-sub">Target: 90%</div>
+          </article>
+
+          <article class="card kpi">
+            <div class="kpi-top">
+              <div class="kpi-label">Assets Scanned</div>
+              <span class="badge">This week</span>
+            </div>
+            <div class="kpi-value">34</div>
+            <div class="kpi-sub">3 pending</div>
+          </article>
+
+          <article class="card kpi">
+            <div class="kpi-top">
+              <div class="kpi-label">Avg. Time to Close</div>
+              <span class="badge badge-warn">SLA</span>
+            </div>
+            <div class="kpi-value">9d</div>
+            <div class="kpi-sub">Critical SLA: 7d</div>
+          </article>
+        </section>
+
+        <section class="grid two-col">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2>Highest Risk Tickets</h2>
+                <p>Prioritised by enterprise risk score</p>
+              </div>
+              <div class="card-actions">
+                <select class="select">
+                  <option>All assets</option>
+                  <option>DMZ</option>
+                  <option>Internal</option>
+                </select>
+                <a class="btn btn-ghost" href="tickets.html">View all</a>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Ticket</th>
+                    <th>Asset</th>
+                    <th>Risk</th>
+                    <th>Status</th>
+                    <th class="right">Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr tabindex="0">
+                    <td><div class="cell-strong">CVE-2024-XXXX</div><div class="cell-sub">Remote code execution</div></td>
+                    <td><div class="cell-strong">web-01</div><div class="cell-sub">Public • Web server</div></td>
+                    <td><span class="badge badge-critical">9.7</span></td>
+                    <td><span class="pill pill-open">Open</span></td>
+                    <td class="right cell-sub">2h ago</td>
+                  </tr>
+                  <tr tabindex="0">
+                    <td><div class="cell-strong">OpenSSL outdated</div><div class="cell-sub">TLS library vulnerability</div></td>
+                    <td><div class="cell-strong">api-02</div><div class="cell-sub">Public • API</div></td>
+                    <td><span class="badge badge-high">8.6</span></td>
+                    <td><span class="pill pill-progress">In progress</span></td>
+                    <td class="right cell-sub">1d ago</td>
+                  </tr>
+                  <tr tabindex="0">
+                    <td><div class="cell-strong">SMB signing disabled</div><div class="cell-sub">Config hardening</div></td>
+                    <td><div class="cell-strong">file-01</div><div class="cell-sub">Private • File server</div></td>
+                    <td><span class="badge badge-med">6.4</span></td>
+                    <td><span class="pill pill-open">Open</span></td>
+                    <td class="right cell-sub">3d ago</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <div class="stack">
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Scan Status</h2>
+                  <p>Latest scheduled job</p>
+                </div>
+                <span class="badge badge-good">Running</span>
+              </div>
+
+              <div class="meter">
+                <div class="meter-top">
+                  <span class="cell-sub">Progress</span>
+                  <span class="cell-sub">68%</span>
+                </div>
+                <div class="meter-bar" role="progressbar" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100">
+                  <div class="meter-fill" style="width:68%"></div>
+                </div>
+                <div class="meter-foot">
+                  <span class="cell-sub">Targets: 34</span>
+                  <span class="cell-sub">ETA: ~12 min</span>
+                </div>
+              </div>
+
+              <div class="row-actions">
+                <a class="btn btn-ghost" href="scans.html">View logs</a>
+                <button class="btn btn-danger" type="button">Stop scan</button>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Quick Actions</h2>
+                  <p>Common admin tasks</p>
+                </div>
+              </div>
+
+              <div class="quick-grid">
+                <a class="quick" href="assets.html"><div class="quick-title">Add asset</div><div class="quick-sub">Register a new host</div></a>
+                <a class="quick" href="scans.html"><div class="quick-title">Run scan</div><div class="quick-sub">Single or global</div></a>
+                <a class="quick" href="reports.html"><div class="quick-title">Generate PDF</div><div class="quick-sub">Posture summary</div></a>
+                <a class="quick" href="tickets.html"><div class="quick-title">Overdue SLA</div><div class="quick-sub">Review breaches</div></a>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span class="cell-sub">© Vuln Platform • Internal use</span>
+        <span class="cell-sub">Last updated: just now</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,175 @@
+{
+  "target": "192.168.68.111",
+  "scanned_at": "2026-03-12T01:27:08.314126",
+  "total": 9,
+  "findings": [
+    {
+      "nvt_name": "vsFTPd 2.3.4 Backdoor Command Execution",
+      "port": "21/tcp",
+      "cvss_score": 10.0,
+      "severity": "Critical",
+      "cves": [
+        "CVE-2011-2523"
+      ],
+      "solution": "Update vsFTPd to version 3.x",
+      "ai_score": 10,
+      "ai_analysis": {
+        "score": 10,
+        "risk_level": "Critical",
+        "impact": "An attacker can execute arbitrary system commands on the target system via the vsFTPd 2.3.4 backdoor.",
+        "exploit_likelihood": "High",
+        "recommendation": "Update vsFTPd to version 3.x to remediate this vulnerability.",
+        "priority": "Immediate"
+      }
+    },
+    {
+      "nvt_name": "OpenSSH Outdated Version",
+      "port": "22/tcp",
+      "cvss_score": 9.8,
+      "severity": "Critical",
+      "cves": [
+        "CVE-2023-38408"
+      ],
+      "solution": "Update OpenSSH to latest version",
+      "ai_score": 9.8,
+      "ai_analysis": {
+        "score": 9.8,
+        "risk_level": "Critical",
+        "impact": "An attacker can gain remote code execution (RCE) on the target system via OpenSSH due to the outdated version.",
+        "exploit_likelihood": "High",
+        "recommendation": "Update OpenSSH to the latest version, specifically OpenSSH 9.4p1 or later.",
+        "priority": "Immediate"
+      }
+    },
+    {
+      "nvt_name": "SSL POODLE Information Leak",
+      "port": "25/tcp",
+      "cvss_score": 10.0,
+      "severity": "Critical",
+      "cves": [
+        "CVE-2014-3566"
+      ],
+      "solution": "Update OpenSSL to version 1.0.2 or later",
+      "ai_score": 10,
+      "ai_analysis": {
+        "score": 10,
+        "risk_level": "Critical",
+        "impact": "An attacker can potentially decrypt SSL/TLS sessions and obtain sensitive information, including authentication credentials and encrypted data.",
+        "exploit_likelihood": "High",
+        "recommendation": "Update OpenSSL to version 1.0.2 or later to mitigate the SSL POODLE vulnerability (CVE-2014-3566).",
+        "priority": "Immediate"
+      }
+    },
+    {
+      "nvt_name": "Anonymous Diffie-Hellman Key Exchange MitM Vulnerability",
+      "port": "25/tcp",
+      "cvss_score": 10.0,
+      "severity": "Critical",
+      "cves": [],
+      "solution": "Update OpenSSL to version 1.0.2 or later",
+      "ai_score": 10,
+      "ai_analysis": {
+        "score": 10,
+        "risk_level": "Critical",
+        "impact": "An attacker can intercept and manipulate encrypted communications, potentially leading to full compromise of the target system.",
+        "exploit_likelihood": "High",
+        "recommendation": "Update OpenSSL to version 1.0.2 or later to mitigate this vulnerability.",
+        "priority": "Immediate"
+      }
+    },
+    {
+      "nvt_name": "vsftpd 2.3.4",
+      "port": "21/tcp",
+      "cvss_score": 10.0,
+      "severity": "Critical",
+      "cves": [
+        "CVE-2011-2523"
+      ],
+      "solution": "Update vsFTPd to version 3.x",
+      "ai_score": 10,
+      "ai_analysis": {
+        "score": 10,
+        "risk_level": "Critical",
+        "impact": "An attacker can execute arbitrary code on the target system via a specially crafted FTP request, resulting in full compromise.",
+        "exploit_likelihood": "High",
+        "recommendation": "Update vsFTPd to version 3.x or later to address the vulnerability CVE-2011-2523.",
+        "priority": "Immediate"
+      }
+    },
+    {
+      "nvt_name": "Bind 9.4.2",
+      "port": "53/udp",
+      "cvss_score": 10.0,
+      "severity": "Critical",
+      "cves": [
+        "CVE-2008-0122",
+        "CVE-2021-25216"
+      ],
+      "solution": "Update Bind to latest version",
+      "ai_score": 10,
+      "ai_analysis": {
+        "score": 10,
+        "risk_level": "Critical",
+        "impact": "An attacker can execute arbitrary code on the Bind 9.4.2 server, leading to full compromise.",
+        "exploit_likelihood": "High",
+        "recommendation"b
+      }
+    },
+    {
+      "nvt_name": "Bind 9.4.2",
+      "port": "53/udp",
+      "cvss_score": 8.6,
+      "severity": "High",
+      "cves": [
+        "CVE-2020-8616",
+        "CVE-2016-1286"
+      ],
+      "solution": "Update Bind to latest version",
+      "ai_score": 8,
+      "ai_analysis": {
+        "score": 8,
+        "risk_level": "High",
+        "impact": "An attacker can exploit this vulnerability to cause a denial-of-service (DoS) or potentially execute arbitrary code on the Bind 9.4.2 server.",
+        "exploit_likelihood": "High",
+        "recommendation": "Update Bind to version 9.11.5 or later to fix CVE-2020-8616 and CVE-2016-1286.",
+        "priority": "Immediate"
+      }
+    },
+    {
+      "nvt_name": "Bind 9.4.2",
+      "port": "53/udp",
+      "cvss_score": 8.6,
+      "severity": "High",
+      "cves": [
+        "CNVD-2020-34454"
+      ],
+      "solution": "Update Bind to latest version",
+      "ai_score": 9,
+      "ai_analysis": {
+        "score": 9,
+        "risk_level": "Critical",
+        "impact": "An attacker can execute arbitrary code on the Bind 9.4.2 server, potentially leading to full compromise of the system.",
+        "exploit_likelihood": "High",
+        "recommendation": "Update Bind to version 9.11.5 or later to fix the vulnerability (CNVD-2020-34454).",
+        "priority": "Immediate"
+      }
+    },
+    {
+      "nvt_name": "Slowloris DOS Attack",
+      "port": "80/tcp",
+      "cvss_score": 7.5,
+      "severity": "High",
+      "cves": [],
+      "solution": "Update Apache to latest version",
+      "ai_score": 8,
+      "ai_analysis": {
+        "score": 8,
+        "risk_level": "High",
+        "impact": "An attacker can perform a Slowloris DOS attack, potentially leading to a denial of service (DoS) condition on the Apache server.",
+        "exploit_likelihood": "High",
+        "recommendation": "Update Apache to the latest version, specifically 2.4.54 or later, to address this vulnerability.",
+        "priority": "Short-term"
+      }
+    }
+  ]
+}
