@@ -1,0 +1,62 @@
+[
+  {
+    "host": "10.0.96.33",
+    "port": 80,
+    "protocol": "tcp",
+    "port_raw": "80/tcp",
+    "nvt_oid": "1.3.6.1.4.1.25623.1.0.108440",
+    "nvt_name": "Cleartext Transmission of Sensitive Information via HTTP",
+    "cvss_score": 4.8,
+    "severity_label": "Medium",
+    "cves": [],
+    "qod": 80,
+    "description": "The following input fields were identified (URL:input name):\n\nhttp://10.0.96.33/drupal/:pass\nhttp://10.0.96.33/drupal/?D=A:pass\nhttp://10.0.96.33/payroll_app.php:password\nhttp://10.0.96.33/phpmyadmin/:pma_password\nhttp://10.0.96.33/phpmyadmin/?D=A:pma_password\nhttp://10.0.96.33/phpmyadmin/changelog.php:pma_password\nhttp://10.0.96.33/phpmyadmin/index.php:pma_password\nhttp://10.0.96.33/phpmyadmin/license.php:pma_password\nhttp://10.0.96.33/phpmyadmin/url.php:pma_password",
+    "solution": "Enforce the transmission of sensitive data via an encrypted SSL/TLS connection.\n  Additionally make sure the host / application is redirecting all users to the secured SSL/TLS connection before\n  allowing to input sensitive data into the mentioned functions."
+  },
+  {
+    "host": "10.0.96.33",
+    "port": 80,
+    "protocol": "tcp",
+    "port_raw": "80/tcp",
+    "nvt_oid": "1.3.6.1.4.1.25623.1.0.902574",
+    "nvt_name": "Drupal 7.0 Information Disclosure Vulnerability - Active Check",
+    "cvss_score": 5.0,
+    "severity_label": "Medium",
+    "cves": [
+      "CVE-2011-3730"
+    ],
+    "qod": 95,
+    "description": "Vulnerable URL: http://10.0.96.33/drupal/modules/simpletest/tests/upgrade/drupal-6.upload.database.php",
+    "solution": "No known solution was made available for at least one year\n  since the disclosure of this vulnerability. Likely none will be provided anymore. General solution\n  options are to upgrade to a newer release, disable respective features, remove the product or\n  replace the product by another one."
+  },
+  {
+    "host": "10.0.96.33",
+    "port": 80,
+    "protocol": "tcp",
+    "port_raw": "80/tcp",
+    "nvt_oid": "1.3.6.1.4.1.25623.1.0.105818",
+    "nvt_name": "Drupal Coder RCE Vulnerability (SA-CONTRIB-2016-039) - Active Check",
+    "cvss_score": 10.0,
+    "severity_label": "High",
+    "cves": [],
+    "qod": 95,
+    "description": "Vulnerable URL: http://10.0.96.33/drupal/sites/all/modules/coder/coder_upgrade/scripts/coder_upgrade.run.php",
+    "solution": "Install the latest version."
+  },
+  {
+    "host": "10.0.96.33",
+    "port": 80,
+    "protocol": "tcp",
+    "port_raw": "80/tcp",
+    "nvt_oid": "1.3.6.1.4.1.25623.1.0.105101",
+    "nvt_name": "Drupal Core SQLi Vulnerability (SA-CORE-2014-005) - Active Check",
+    "cvss_score": 7.5,
+    "severity_label": "High",
+    "cves": [
+      "CVE-2014-3704"
+    ],
+    "qod": 98,
+    "description": "Vulnerable URL: http://10.0.96.33/drupal/?q=node&destination=node",
+    "solution": "Updates are available. Please see the references for more\n  information."
+  }
+]

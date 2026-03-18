@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Riskforge — Scan Detail{% endblock %}
+{% block page_h1 %}Scan Detail{% endblock %}
+{% block page_subtitle %}Full scan results and AI analysis{% endblock %}
+
+{% block content %}
+
+{% if scan.status in ("Running", "Starting", "Requested") %}
+  <meta http-equiv="refresh" content="15">
+  <div style="padding:8px 0; color:var(--muted); font-size:13px;">
+    ⟳ Scan in progress — page refreshes every 15 seconds
+  </div>
+{% endif %}
+
+<!-- Scan Header -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>Scan #{{ scan.scan_id }} — {{ scan.asset_name }}</h2>
+      <p>{{ scan.asset_ip }}</p>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <a class="btn btn-ghost" href="/scans/{{ scan.scan_id }}?refresh=1">Refresh</a>
+      <a class="btn btn-ghost" href="/scans">Back</a>
+      {% if scan.status == "Done" %}
+        <a class="btn btn-primary" href="/scans/{{ scan.scan_id }}/ticket/new">Create Ticket</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="padding: 0 16px 16px; display:flex; gap:32px; flex-wrap:wrap;">
+    <div>
+      <div class="cell-sub">Engine</div>
+      <div><span class="badge">{{ scan.engine }}</span></div>
+    </div>
+    <div>
+      <div class="cell-sub">Status</div>
+      <div>
+        {% if scan.status in ("Running", "Starting", "Requested") %}
+          <span class="badge badge-med">⟳ {{ scan.status }}</span>
+        {% elif scan.status == "Done" %}
+          <span class="badge badge-good">✓ Done</span>
+        {% elif scan.status == "Failed" %}
+          <span class="badge badge-critical">✗ Failed</span>
+        {% else %}
+          <span class="badge">{{ scan.status }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div>
+      <div class="cell-sub">Progress</div>
+      <div class="cell-strong">{{ scan.progress }}%</div>
+    </div>
+    <div>
+      <div class="cell-sub">Started</div>
+      <div class="cell-sub">{{ scan.started_at }}</div>
+    </div>
+    <div>
+      <div class="cell-sub">Finished</div>
+      <div class="cell-sub">{{ scan.finished_at if scan.finished_at else "—" }}</div>
+    </div>
+  </div>
+
+  {% if scan.error_message %}
+  <div style="padding: 0 16px 16px; color: rgba(255,90,110,0.9);">
+    <b>Error:</b> {{ scan.error_message }}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Findings Table -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>Findings</h2>
+      <p>
+        {% if findings %}
+          {{ findings|length }} vulnerabilities found
+        {% else %}
+          No findings stored yet
+        {% endif %}
+      </p>
+    </div>
+    {% if findings %}
+      <span class="badge badge-critical">{{ findings|length }}</span>
+    {% endif %}
+  </div>
+
+  {% if findings %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Vulnerability</th>
+          <th>Port</th>
+          <th>CVSS</th>
+          <th>CVEs</th>
+          <th>Solution</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in findings %}
+        <tr>
+          <td>
+            <span class="cell-strong">{{ f.nvt_name }}</span>
+          </td>
+          <td>{{ f.port or "—" }}</td>
+          <td>
+            {% set score = f.cvss_score | float %}
+            {% if score >= 9 %}
+              <span class="badge badge-critical">{{ f.cvss_score }}</span>
+            {% elif score >= 7 %}
+              <span class="badge badge-high">{{ f.cvss_score }}</span>
+            {% elif score >= 4 %}
+              <span class="badge badge-med">{{ f.cvss_score }}</span>
+            {% else %}
+              <span class="badge badge-low">{{ f.cvss_score }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="cell-sub">
+              {% if f.cves %}{{ f.cves }}{% else %}—{% endif %}
+            </span>
+          </td>
+          <td>
+            <span class="cell-sub">
+              {{ f.solution[:120] if f.solution else "—" }}{% if f.solution and f.solution|length > 120 %}…{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 0 16px 16px; color: var(--muted);">
+    {% if scan.status in ("Running", "Starting", "Requested") %}
+      Scan is still running — findings will appear when complete.
+    {% else %}
+      No findings stored in database for this scan.
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- AI Verdict -->
+{% if scan.ai_verdict %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>AI Analysis</h2>
+      <p>Executive summary and recommendations</p>
+    </div>
+  </div>
+  <div style="padding: 0 16px 16px;">
+    <pre style="white-space: pre-wrap; margin: 0; font-size: 13px; line-height: 1.6;">{{ scan.ai_verdict }}</pre>
+  </div>
+</div>
+{% endif %}
+
+<!-- Raw Scanner Output -->
+{% if scan.scanner_output %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>Raw Scanner Output</h2>
+      <p>Full terminal output from all tools</p>
+    </div>
+    <button class="btn btn-ghost" onclick="
+      var el = document.getElementById('raw-output');
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    ">Toggle</button>
+  </div>
+  <div id="raw-output" style="display:none; padding: 0 16px 16px;">
+    <pre style="white-space: pre-wrap; margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted);">{{ scan.scanner_output }}</pre>
+  </div>
+</div>
+{% endif %}
+
+<!-- GVM specific: parse findings button -->
+{% if scan.engine == "GVM" and scan.status == "Done" and scan.gvm_report_id %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>GVM Actions</h2>
+      <p>Task ID: {{ scan.gvm_task_id or "—" }} | Report ID: {{ scan.gvm_report_id }}</p>
+    </div>
+  </div>
+  <div style="padding: 0 16px 16px;">
+    <form method="POST" action="/scans/{{ scan.scan_id }}/parse_findings">
+      <button class="btn btn-primary" type="submit">Parse & Store Findings from GVM</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

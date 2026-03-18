@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vuln Platform — Scans</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo"></div><div><div class="brand-name">Vuln Platform</div><div class="brand-sub">Enterprise Console</div></div></div>
+      <nav class="nav">
+        <div class="nav-section">Manage</div>
+        <a class="nav-item" href="dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+        <a class="nav-item" href="assets.html"><span class="nav-dot"></span>Assets</a>
+        <a class="nav-item active" href="scans.html"><span class="nav-dot"></span>Scans</a>
+        <a class="nav-item" href="tickets.html"><span class="nav-dot"></span>Tickets</a>
+        <div class="nav-section">Insights</div>
+        <a class="nav-item" href="reports.html"><span class="nav-dot"></span>Reports</a>
+        <a class="nav-item" href="trends.html"><span class="nav-dot"></span>Trends</a>
+        <div class="nav-section">Admin</div>
+        <a class="nav-item" href="users.html"><span class="nav-dot"></span>Users</a>
+        <a class="nav-item" href="settings.html"><span class="nav-dot"></span>Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="mini-card">
+          <div class="mini-title">Scanner</div>
+          <div class="mini-value">Greenbone/OpenVAS</div>
+          <button class="btn btn-ghost" type="button">Configure</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" type="button">☰</button>
+          <div class="page-title"><h1>Scans</h1><p>Run scans and view status</p></div>
+        </div>
+        <div class="topbar-right">
+          <a class="btn btn-primary" href="assets.html">Select Targets</a>
+          <div class="user"><div class="avatar">A</div><div><div class="user-name">admin</div><div class="user-role">Administrator</div></div></div>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="grid two-col">
+          <article class="card">
+            <div class="card-head">
+              <div><h2>Recent Scans</h2><p>Queued / running / completed</p></div>
+              <div class="card-actions">
+                <button class="btn btn-ghost" type="button">Refresh</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Scan</th>
+                    <th>Scope</th>
+                    <th>Status</th>
+                    <th class="right">Started</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr tabindex="0">
+                    <td><div class="cell-strong">SCAN-1029</div><div class="cell-sub">Weekly scheduled</div></td>
+                    <td class="cell-sub">All assets (34)</td>
+                    <td><span class="badge badge-good">Running</span></td>
+                    <td class="right cell-sub">Today 01:02</td>
+                  </tr>
+                  <tr tabindex="0">
+                    <td><div class="cell-strong">SCAN-1028</div><div class="cell-sub">Manual</div></td>
+                    <td class="cell-sub">web-01</td>
+                    <td><span class="badge">Completed</span></td>
+                    <td class="right cell-sub">Yesterday</td>
+                  </tr>
+                  <tr tabindex="0">
+                    <td><div class="cell-strong">SCAN-1027</div><div class="cell-sub">Manual</div></td>
+                    <td class="cell-sub">DMZ group (6)</td>
+                    <td><span class="badge badge-warn">Failed</span></td>
+                    <td class="right cell-sub">3d ago</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div><h2>Run a Scan (Mock)</h2><p>This will call OpenVAS later</p></div>
+              <span class="badge">PoC</span>
+            </div>
+
+            <div style="padding: 0 16px 16px;">
+              <label class="cell-sub">Scope</label>
+              <select class="select" style="width:100%; margin:8px 0 12px;">
+                <option>All assets</option>
+                <option>Single asset</option>
+                <option>Tag/group</option>
+              </select>
+
+              <label class="cell-sub">Target</label>
+              <select class="select" style="width:100%; margin:8px 0 16px;">
+                <option>All assets (34)</option>
+                <option>web-01 (192.168.10.10)</option>
+                <option>file-01 (192.168.20.15)</option>
+              </select>
+
+              <div class="row-actions">
+                <button class="btn btn-primary" type="button">Start scan</button>
+                <button class="btn btn-ghost" type="button">Schedule</button>
+              </div>
+
+              <p class="cell-sub" style="margin-top:12px;">
+                Later: clicking “Start scan” creates a Scan row in SQL + triggers a worker/cron to call OpenVAS.
+              </p>
+            </div>
+          </article>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span class="cell-sub">© Vuln Platform • Internal use</span>
+        <span class="cell-sub">Scanner integration: pending</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
