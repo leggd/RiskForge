@@ -32,6 +32,7 @@
     <hr style="margin: 16px 0;">
 
     {% if scan.engine == "GVM" %}
+
       <h3>GVM Details</h3>
       <p><b>Task ID:</b> {{ scan.gvm_task_id if scan.gvm_task_id else "-" }}</p>
       <p><b>Report ID:</b> {{ scan.gvm_report_id if scan.gvm_report_id else "-" }}</p>
@@ -43,44 +44,9 @@
         <p><i>This will be changed when Danny develops the RiskForge Scoring Logic</i></p>
       </form>
 
-      <!-- Live findings direct from GVM -->
-      <h3 style="margin-top: 20px;">Live Findings from GVM</h3>
-      <div class="card" style="padding: 12px; max-height: 280px; overflow-y: auto;">
-        {% if findings and findings|length > 0 %}
-          {% for f in findings %}
-            <div style="margin-bottom: 12px;">
-              <p style="margin: 0;">
-                <b>{{ f.nvt_name if f.nvt_name else "Unnamed" }}</b>
-              </p>
-              <p style="margin: 4px 0 0;">
-                <b>Port:</b> {{ f.port if f.port else "-" }}
-                &nbsp;|&nbsp;
-                <b>CVSS:</b> {{ f.cvss_score }}
-              </p>
-              <p style="margin: 4px 0 0;">
-                <b>CVEs:</b>
-                {% if f.cves and f.cves|length > 0 %}
-                  {{ f.cves|join(", ") }}
-                {% else %}
-                  None
-                {% endif %}
-              </p>
-              {% if f.solution %}
-                <p style="margin: 6px 0 0;">
-                  <b>Solution:</b> {{ f.solution }}
-                </p>
-              {% endif %}
-              <hr style="margin: 10px 0;">
-            </div>
-          {% endfor %}
-        {% else %}
-          <p style="margin: 0;"><i>No findings available yet.</i></p>
-        {% endif %}
-      </div>
-
-      <!-- Stored findings from database -->
       <h3 style="margin-top: 20px;">Stored Findings</h3>
-        <div style="border: 1px solid var(--border); border-radius: var(--radius);">        {% if stored_findings and stored_findings|length > 0 %}
+      <div style="border: 1px solid var(--border); border-radius: var(--radius);">
+        {% if stored_findings and stored_findings|length > 0 %}
           <table class="table" style="margin: 0;">
             <thead>
               <tr>
@@ -109,23 +75,122 @@
       </div>
 
     {% elif scan.engine == "AI" %}
-      <h3>AI Scanner Output</h3>
+{% if scan.status in ("Running", "GVM Complete") %}
+  <meta http-equiv="refresh" content="15">
+  <p class="cell-sub">⟳ Scan in progress — page refreshes every 15 seconds</p>
+{% endif %}
+
+<h3>Scanner Output</h3>
+<div class="card" style="padding: 12px; max-height: 400px; overflow-y: auto;">
+  {% if scan.scanner_output %}
+    <pre style="white-space: pre-wrap; margin: 0; font-size: 12px;">{{ scan.scanner_output }}</pre>
+  {% else %}
+    <p style="margin: 0;"><i>No output yet.</i></p>
+  {% endif %}
+</div>
+      <h3>AI Verdict</h3>
       {% if scan.ai_verdict %}
-        <p><b>AI Verdict:</b></p>
         <div class="card" style="padding: 12px; margin-bottom: 12px;">
           <pre style="white-space: pre-wrap; margin: 0;">{{ scan.ai_verdict }}</pre>
         </div>
       {% else %}
         <p><i>No AI output stored yet.</i></p>
       {% endif %}
-      {% if scan.scanner_output %}
-        <p><b>Raw Output:</b></p>
-        <div class="card" style="padding: 12px;">
-          <pre style="white-space: pre-wrap; margin: 0;">{{ scan.scanner_output }}</pre>
+
+      <h3 style="margin-top: 20px;">Stored Findings</h3>
+      <div style="border: 1px solid var(--border); border-radius: var(--radius);">
+        {% if stored_findings and stored_findings|length > 0 %}
+          <table class="table" style="margin: 0;">
+            <thead>
+              <tr>
+                <th>Finding</th>
+                <th>Port</th>
+                <th>CVSS</th>
+                <th>RiskForge Score</th>
+                <th>CVEs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in stored_findings %}
+              <tr>
+                <td>{{ f.nvt_name if f.nvt_name else "Unnamed" }}</td>
+                <td>{{ f.port if f.port else "-" }}</td>
+                <td>{{ f.cvss_score }}</td>
+                <td>{{ f.riskforge_score }}</td>
+                <td>{{ f.cves if f.cves else "None" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p style="padding: 12px; margin: 0;"><i>No findings stored yet.</i></p>
+        {% endif %}
+      </div>
+
+    {% elif scan.engine == "Full" %}
+      {% if scan.status in ("Running", "GVM Complete") %}
+  <meta http-equiv="refresh" content="15">
+  <p class="cell-sub">⟳ Scan in progress — page refreshes every 15 seconds</p>
+{% endif %}
+      <!-- GVM Status -->
+      <h3>GVM Status</h3>
+      <p><b>Task ID:</b> {{ scan.gvm_task_id if scan.gvm_task_id else "-" }}</p>
+      <p><b>Report ID:</b> {{ scan.gvm_report_id if scan.gvm_report_id else "-" }}</p>
+      <p><b>Progress:</b> {{ scan.progress }}%</p>
+
+      <hr style="margin: 16px 0;">
+<h3>Scanner Output</h3>
+<div class="card" style="padding: 12px; max-height: 400px; overflow-y: auto;">
+  {% if scan.scanner_output %}
+    <pre style="white-space: pre-wrap; margin: 0; font-size: 12px;">{{ scan.scanner_output }}</pre>
+  {% else %}
+    <p style="margin: 0;"><i>No output yet.</i></p>
+  {% endif %}
+</div>
+
+
+      <!-- AI Verdict -->
+      <h3>AI Verdict</h3>
+      {% if scan.ai_verdict %}
+        <div class="card" style="padding: 12px; margin-bottom: 12px;">
+          <pre style="white-space: pre-wrap; margin: 0;">{{ scan.ai_verdict }}</pre>
         </div>
       {% else %}
-        <p><i>No raw output stored yet.</i></p>
+        <p><i>AI scan still running or no output yet.</i></p>
       {% endif %}
+
+      <hr style="margin: 16px 0;">
+
+      <!-- Stored Findings (combined GVM + AI) -->
+      <h3>Stored Findings</h3>
+      <div style="border: 1px solid var(--border); border-radius: var(--radius);">
+        {% if stored_findings and stored_findings|length > 0 %}
+          <table class="table" style="margin: 0;">
+            <thead>
+              <tr>
+                <th>Finding</th>
+                <th>Port</th>
+                <th>CVSS</th>
+                <th>RiskForge Score</th>
+                <th>CVEs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in stored_findings %}
+              <tr>
+                <td>{{ f.nvt_name if f.nvt_name else "Unnamed" }}</td>
+                <td>{{ f.port if f.port else "-" }}</td>
+                <td>{{ f.cvss_score }}</td>
+                <td>{{ f.riskforge_score }}</td>
+                <td>{{ f.cves if f.cves else "None" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p style="padding: 12px; margin: 0;"><i>No findings stored yet — scan may still be running.</i></p>
+        {% endif %}
+      </div>
 
     {% else %}
       <p><i>Unknown scan engine.</i></p>

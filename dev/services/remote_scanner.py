@@ -4,7 +4,7 @@ import json
 KALI_HOST = "10.0.96.32"
 KALI_USER = "kali"
 KALI_PASS = "kali"
-REMOTE_SCRIPT = "/home/kali/remote_test/test_script.py"
+REMOTE_SCRIPT = "/home/kali/remote_test/scanner.py"
 
 def run_terminal(command):
     # Create SSH client
@@ -81,48 +81,54 @@ def run_os_detection(ip):
     
     return {"ip": ip, "os": os_name}
 
-def run_ai_scan(target_ip):
+def run_ai_scan(target_ip, scan_id=None):
     """
     Connects to Kali via SSH,
     runs the remote scanner script,
     and returns the JSON result as a Python dictionary.
     """
-
-    # Create SSH client
     client = paramiko.SSHClient()
-
-    # Auto-accept unknown host keys (OK for testing)
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        # Connect to Kali
         client.connect(
             hostname=KALI_HOST,
             username=KALI_USER,
             password=KALI_PASS
         )
 
-        # Build command string
         command = "python3 -u " + REMOTE_SCRIPT + " " + target_ip
 
-        # Run remote command
         stdin, stdout, stderr = client.exec_command(command)
 
-        # Read output
-        output = stdout.read().decode().strip()
-        error = stderr.read().decode().strip()
+        output = ""
 
-        # Close connection
+        for line in stdout:
+            if line is None:
+                continue
+            output = output + line
+            print("SCANNER LINE: " + line.strip())
+
+            if scan_id:
+                from app import execute_query
+                sql = """
+                UPDATE scans
+                SET scanner_output = %s
+                WHERE scan_id = %s
+                """
+                execute_query(sql, (output, scan_id))
         client.close()
 
-        # If there was an error, print it and return None
-        if error:
-            print("Remote scanner error:")
-            print(error)
-            return None
+        # Find the line containing our JSON output
+        result_line = None
+        for line in output.splitlines():
+            if "RISKFORGE_OUTPUT:" in line:
+                result_line = line
+                break
 
-        # Convert JSON string into Python dictionary
-        data = json.loads(output)
+        # Strip the prefix and parse the JSON
+        json_str = result_line.replace("RISKFORGE_OUTPUT:", "")
+        data = json.loads(json_str)
 
         return data
 

@@ -8,6 +8,9 @@ from services.gvm_service import start_gvm_scan, get_gvm_task_status
 from services.remote_scanner import run_ping_sweep, run_os_detection, run_ai_scan
 from services.gvm_service import get_gvm_findings
 from services.findings_service import store_findings
+from services.worker import start_worker
+import threading
+
 import json
 import ipaddress
 import datetime
@@ -20,6 +23,8 @@ app = Flask(__name__)
 
 # Set flask secret key for secure signed in sessions
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+
+
 
 def get_db_connection():
     """
@@ -714,67 +719,129 @@ def scans():
                                 0
                             )
                         )
-                        # Obtain scanner output (need to adapt scanner script yet)
-                        result = run_ai_scan(target_ip) 
 
-                        # Update scan status in database if failed
-                        if result is None:
-                            sql = """
-                            UPDATE scans
-                            SET status=%s,
-                            error_message=%s,
-                            finished_at=NOW()
-                            WHERE scan_id=%s
-                            """
-                            execute_query(
-                                sql,
-                                (
-                                    "Failed",
-                                    "AI scanner returned no data (check Kali script/output)",
-                                    scan_id
-                                )
-                            )
+                        log_event(
+                            session["user_id"],
+                            "START_SCAN",
+                            "SCAN",
+                            scan_id,
+                            f"AI scan started for asset_id={asset_id}"
+                        )
 
-                            log_event(
+                        # Capture user_id before thread starts — session not accessible inside thread
+                        user_id = session["user_id"]
+
+                        def run_scan_thread(scan_id, target_ip, asset_id, user_id):
+                            result = run_ai_scan(target_ip, scan_id)
+
+                            if result is None:
+                                sql = """
+                                UPDATE scans
+                                SET status=%s,
+                                error_message=%s,
+                                finished_at=NOW()
+                                WHERE scan_id=%s
+                                """
+                                execute_query(sql, ("Failed", "AI scanner returned no data", scan_id))
+
+                            else:
+                                findings = result.get("findings", [])
+                                summary = result.get("summary", "")
+
+                                # Store findings and auto create tickets
+                                store_findings(scan_id, asset_id, findings, user_id)
+
+                                sql = """
+                                UPDATE scans
+                                SET status=%s,
+                                progress=%s,
+                                ai_verdict=%s,
+                                finished_at=NOW(),
+                                findings_parsed=1
+                                WHERE scan_id=%s
+                                """
+                                execute_query(sql, ("Done", 100, summary, scan_id))
+
+                        thread = threading.Thread(target=run_scan_thread, args=(scan_id, target_ip, asset_id, user_id))
+                        thread.daemon = True
+                        thread.start()
+                    elif engine == "Full":
+                        task_id, report_id = start_gvm_scan(target_ip)
+
+                        sql = """
+                        INSERT INTO scans (
+                        asset_id,
+                        started_by,
+                        engine,
+                        gvm_task_id,
+                        gvm_report_id,
+                        status,
+                        progress)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """
+                        scan_id = execute_query(
+                            sql,
+                            (
+                                asset_id,
                                 session["user_id"],
-                                "SCAN_FAILED",
-                                "SCAN",
-                                scan_id,
-                                "AI scanner returned no data"
+                                "Full",
+                                task_id,
+                                report_id,
+                                "Running",
+                                0
                             )
+                        )
 
-                        else:
-                            # When scanner app is configured to output json
-                            # Will get the following
-                            # scanner_output = raw tool logs
-                            # ai_verdict = the AI final report
-                            scanner_output = json.dumps(result)
+                        log_event(
+                            session["user_id"],
+                            "START_SCAN",
+                            "SCAN",
+                            scan_id,
+                            f"Full scan started for asset_id={asset_id}"
+                        )
+                        user_id = session["user_id"]
 
+                        def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
+                            result = run_ai_scan(target_ip, scan_id)
+
+                            if result is None:
+                                sql = """
+                                UPDATE scans
+                                SET error_message=%s
+                                WHERE scan_id=%s
+                                """
+                                execute_query(sql, ("AI scanner returned no data", scan_id))
+
+                            else:
+                                findings = result.get("findings", [])
+                                summary = result.get("summary", "")
+
+                                store_findings(scan_id, asset_id, findings, user_id)
+
+                                sql = """
+                                UPDATE scans
+                                SET ai_verdict=%s, ai_complete=1
+                                WHERE scan_id=%s
+                                """
+                                execute_query(sql, (summary, scan_id))
+
+                            # Check if GVM is also done — if so mark the whole scan as Done
                             sql = """
-                            UPDATE scans
-                            SET status=%s,
-                            progress=%s,
-                            scanner_output=%s,
-                            finished_at=NOW()
-                            WHERE scan_id=%s
+                            SELECT status FROM scans WHERE scan_id = %s
                             """
-                            execute_query(
-                                sql,
-                                (
-                                    "Done",
-                                    100,
-                                    scanner_output,
-                                    scan_id
-                                )
-                            )
-                            
-                            log_event(
-                                session["user_id"],
-                                "SCAN_COMPLETED",
-                                "SCAN",
-                                scan_id,
-                                f"AI scan completed successfully for asset_id={asset_id}"
-                            )
+                            current = execute_query(sql, (scan_id,), "one")
+
+                            if current and current["status"] == "GVM Complete":
+                                sql = """
+                                UPDATE scans
+                                SET status='Done'
+                                WHERE scan_id=%s
+                                """
+                                execute_query(sql, (scan_id,))
+
+                        ai_thread = threading.Thread(target=run_full_ai_thread, args=(scan_id, target_ip, asset_id, user_id))
+                        ai_thread.daemon = True
+                        ai_thread.start()
                     else:
                         # Error handling if web page allows unspecified engine
                         print("Unknown engine selected: ", engine)
@@ -1171,4 +1238,6 @@ def update_ticket(ticket_id):
         return "Error updating ticket: " + str(e)
 # Run Server
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Start scan findings parsing worker in the background as soon as app loads
+    start_worker()
+    app.run(debug=True, use_reloader=False)

@@ -31,10 +31,10 @@ def store_findings(scan_id, asset_id, findings, created_by, min_score=5.0):
     else:
         exposure = "PUBLIC"
 
-    # Remove any existing findings for this scan (avoids duplicates)
-    cur.execute("DELETE FROM findings WHERE scan_id = %s", (scan_id,))
-    # Optional for PoC/testing: remove tickets for this scan so reruns don't duplicate
-    cur.execute("DELETE FROM tickets WHERE scan_id = %s", (scan_id,))
+    # # Remove any existing findings for this scan (avoids duplicates)
+    # cur.execute("DELETE FROM findings WHERE scan_id = %s", (scan_id,))
+    # # Optional for PoC/testing: remove tickets for this scan so reruns don't duplicate
+    # cur.execute("DELETE FROM tickets WHERE scan_id = %s", (scan_id,))
 
     for f in findings:
 
