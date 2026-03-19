@@ -1,19 +1,15 @@
 import os
-from flask import Flask, request, redirect, session, render_template
-import pymysql
-from dotenv import load_dotenv
-import bcrypt
-from pymysql.err import IntegrityError
-from services.gvm_service import start_gvm_scan, get_gvm_task_status
-from services.remote_scanner import run_ping_sweep, run_os_detection, run_ai_scan
-from services.gvm_service import get_gvm_findings
-from services.findings_service import store_findings
-from services.worker import start_worker
-import threading
-
-import json
 import ipaddress
-import datetime
+import pymysql
+import bcrypt
+import threading
+from flask import Flask, request, redirect, session, render_template
+from dotenv import load_dotenv
+from pymysql.err import IntegrityError
+from services.gvm_services import start_gvm_scan, get_gvm_task_status
+from services.gvm_services import get_gvm_findings
+from services.scanner_worker import store_findings, start_worker
+from services.scanner_services import run_ping_sweep, run_os_detection, run_scan_thread, run_full_ai_thread, run_ping_sweep, run_os_detection
 
 # Load environment variables for DB details, api keys etc
 load_dotenv()
@@ -23,8 +19,6 @@ app = Flask(__name__)
 
 # Set flask secret key for secure signed in sessions
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-
-
 
 def get_db_connection():
     """
@@ -614,309 +608,15 @@ def retire_asset(asset_id):
     except Exception as e:
         return f"Error retiring asset: " + str(e)
 
-@app.route("/scans", methods=["GET", "POST"])
+@app.route("/scans", methods=["GET"])
 def scans():
     """
-    Scan history page and scan launcher
-
-    On POST it starts a new scan for a selected asset using the chosen engine (GVM or AI)
-    On GET it updates progress for any running GVM scans and displays scan history
+    Displays scan history and asset list for scan launching.
     """
-    # Require Authentication
     if "user_id" not in session:
         return redirect("/login")
 
-    # Handle new scan requrest
-    if request.method == "POST":
-        # Obtain asset_id and engine from form input
-        asset_id = request.form.get("asset_id")
-        engine = request.form.get("engine") 
-
-        if asset_id:
-            try:
-                sql = """
-                SELECT ip_address
-                FROM assets
-                WHERE asset_id = %s
-                """
-                # Obtain asset ip_address record using asset_id
-                asset = execute_query(sql, (asset_id),"one")
-
-                if asset is None:
-                    # Handle missing asset, needs conversion to web page error
-                    print("Asset not found")
-
-                # Extract target_ip from obtained asset record
-                target_ip = asset["ip_address"]
-
-                sql = """
-                SELECT scan_id FROM scans 
-                WHERE asset_id = %s 
-                AND status NOT IN ('Done', 'Stopped', 'Interrupted', 'Aborted', 'Failed')
-                """
-                exists = execute_query(sql,(asset_id),"one")
-                
-                if exists:
-                    # Display error webpage, will implement inside page later
-                    return "Scan already running for this asset"
-                else:
-                    # GVM Scan Handler
-                    if engine == "GVM":
-                        # Obtain GVM task_id and report_id from GVM process
-                        task_id, report_id = start_gvm_scan(target_ip)
-
-                        sql = """
-                        INSERT INTO scans (
-                        asset_id,
-                        started_by,
-                        engine, 
-                        gvm_task_id, 
-                        gvm_report_id,
-                        status,
-                        progress) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        """
-                        # Insert scan record into database
-                        scan_id = execute_query(
-                            sql,
-                            (
-                                asset_id,
-                                session["user_id"],
-                                "GVM",
-                                task_id,
-                                report_id,
-                                "Requested",
-                                0
-                            )
-                        )
-
-                        log_event(
-                            session["user_id"],
-                            "START_SCAN",
-                            "SCAN",
-                            scan_id,
-                            f"GVM scan started for asset_id={asset_id}, task_id={task_id}"
-                        )
-
-                    # AI Scan Handler
-                    elif engine == "AI":
-                        sql = """
-                        INSERT INTO scans (
-                        asset_id,
-                        started_by,
-                        engine,
-                        status,
-                        progress)
-                        VALUES (%s, %s, %s, %s, %s)
-                        """
-                        scan_id = execute_query(
-                            sql,
-                            (
-                                asset_id,
-                                session["user_id"],
-                                "AI",
-                                "Running",
-                                0
-                            )
-                        )
-
-                        log_event(
-                            session["user_id"],
-                            "START_SCAN",
-                            "SCAN",
-                            scan_id,
-                            f"AI scan started for asset_id={asset_id}"
-                        )
-
-                        # Capture user_id before thread starts — session not accessible inside thread
-                        user_id = session["user_id"]
-
-                        def run_scan_thread(scan_id, target_ip, asset_id, user_id):
-                            result = run_ai_scan(target_ip, scan_id)
-
-                            if result is None:
-                                sql = """
-                                UPDATE scans
-                                SET status=%s,
-                                error_message=%s,
-                                finished_at=NOW()
-                                WHERE scan_id=%s
-                                """
-                                execute_query(sql, ("Failed", "AI scanner returned no data", scan_id))
-
-                            else:
-                                findings = result.get("findings", [])
-                                summary = result.get("summary", "")
-
-                                # Store findings and auto create tickets
-                                store_findings(scan_id, asset_id, findings, user_id)
-
-                                sql = """
-                                UPDATE scans
-                                SET status=%s,
-                                progress=%s,
-                                ai_verdict=%s,
-                                finished_at=NOW(),
-                                findings_parsed=1
-                                WHERE scan_id=%s
-                                """
-                                execute_query(sql, ("Done", 100, summary, scan_id))
-
-                        thread = threading.Thread(target=run_scan_thread, args=(scan_id, target_ip, asset_id, user_id))
-                        thread.daemon = True
-                        thread.start()
-                    elif engine == "Full":
-                        task_id, report_id = start_gvm_scan(target_ip)
-
-                        sql = """
-                        INSERT INTO scans (
-                        asset_id,
-                        started_by,
-                        engine,
-                        gvm_task_id,
-                        gvm_report_id,
-                        status,
-                        progress)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        """
-                        scan_id = execute_query(
-                            sql,
-                            (
-                                asset_id,
-                                session["user_id"],
-                                "Full",
-                                task_id,
-                                report_id,
-                                "Running",
-                                0
-                            )
-                        )
-
-                        log_event(
-                            session["user_id"],
-                            "START_SCAN",
-                            "SCAN",
-                            scan_id,
-                            f"Full scan started for asset_id={asset_id}"
-                        )
-                        user_id = session["user_id"]
-
-                        def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
-                            result = run_ai_scan(target_ip, scan_id)
-
-                            if result is None:
-                                sql = """
-                                UPDATE scans
-                                SET error_message=%s
-                                WHERE scan_id=%s
-                                """
-                                execute_query(sql, ("AI scanner returned no data", scan_id))
-
-                            else:
-                                findings = result.get("findings", [])
-                                summary = result.get("summary", "")
-
-                                store_findings(scan_id, asset_id, findings, user_id)
-
-                                sql = """
-                                UPDATE scans
-                                SET ai_verdict=%s, ai_complete=1
-                                WHERE scan_id=%s
-                                """
-                                execute_query(sql, (summary, scan_id))
-
-                            # Check if GVM is also done — if so mark the whole scan as Done
-                            sql = """
-                            SELECT status FROM scans WHERE scan_id = %s
-                            """
-                            current = execute_query(sql, (scan_id,), "one")
-
-                            if current and current["status"] == "GVM Complete":
-                                sql = """
-                                UPDATE scans
-                                SET status='Done'
-                                WHERE scan_id=%s
-                                """
-                                execute_query(sql, (scan_id,))
-
-                        ai_thread = threading.Thread(target=run_full_ai_thread, args=(scan_id, target_ip, asset_id, user_id))
-                        ai_thread.daemon = True
-                        ai_thread.start()
-                    else:
-                        # Error handling if web page allows unspecified engine
-                        print("Unknown engine selected: ", engine)
-            except Exception as e:
-                print("Error starting scan: "  + str(e))
     try:
-        # Update progress for active GVM scans by polling GVM engine
-        sql = """
-        SELECT scan_id, gvm_task_id, status
-        FROM scans
-        WHERE engine = 'GVM' AND gvm_task_id IS NOT NULL
-        """
-        
-        all_scans = execute_query(sql,None,"all")
-
-        FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
-
-        for scan in all_scans:
-            scan_id = scan["scan_id"]
-            task_id = scan["gvm_task_id"]
-            current_status = scan["status"]
-
-            # Skip scans already completed
-            if current_status in FINISHED_STATES:
-                continue
-
-            # Obtain up to date status and progress from GVM engine
-            status, progress = get_gvm_task_status(task_id)
-
-            # Update scan record with finished state or current progress
-            if status in FINISHED_STATES:
-                sql = """
-                UPDATE scans
-                SET status=%s,
-                progress=%s,
-                finished_at = NOW()
-                WHERE scan_id=%s
-                """
-                execute_query(sql, (status, progress, scan_id))
-                # Update asset record last_scanned_at time
-                sql = """
-                UPDATE assets
-                SET last_scanned_at = NOW()
-                WHERE asset_id = %s
-                """
-                execute_query(sql,(asset_id))
-                if status in ("Failed", "Aborted", "Interrupted"):
-                    log_event(
-                        session["user_id"],
-                        "SCAN_FAILED",
-                        "SCAN",
-                        scan_id,
-                        f"GVM scan finished with failure status={status}"
-                )
-                elif status == "Done":
-                      log_event(
-                          session["user_id"],
-                          "SCAN_COMPLETED",
-                          "SCAN",
-                          scan_id,
-                          f"GVM scan completed successfully (progress={progress}%)"
-                      )
-            else:
-                sql = """
-                UPDATE scans
-                SET status=%s, progress=%s
-                WHERE scan_id=%s 
-                """
-                execute_query(sql, (status, progress, scan_id))
-
-    except Exception as e:
-        print("Error updating scan progress: " + str(e))
-
-    try:
-        # Obtain all scans and join with associated assets
         sql = """
         SELECT 
         scans.scan_id,
@@ -931,17 +631,15 @@ def scans():
         JOIN assets ON scans.asset_id = assets.asset_id
         ORDER BY scans.started_at DESC
         """
-        scan_list = execute_query(sql,None,"all")
+        scan_list = execute_query(sql, None, "all")
 
-        # Filter out retired assets
         sql = """
         SELECT asset_id, name 
         FROM assets 
         WHERE retired = FALSE 
         ORDER BY name ASC
         """
-
-        asset_list = execute_query(sql,None,"all")
+        asset_list = execute_query(sql, None, "all")
 
     except Exception as e:
         scan_list = []
@@ -953,7 +651,168 @@ def scans():
         scans=scan_list,
         assets=asset_list,
         username=session["username"],
-        role=session["role"])
+        role=session["role"]
+    )
+
+@app.route("/scans", methods=["POST"])
+def start_scan():
+    """
+    Handles launching a new scan for a selected asset.
+    Supports GVM, AI and Both running together.
+    """
+    if "user_id" not in session:
+        return redirect("/login")
+
+    asset_id = request.form.get("asset_id")
+    engine = request.form.get("engine")
+
+    if not asset_id:
+        return redirect("/scans")
+
+    try:
+        sql = """
+        SELECT ip_address
+        FROM assets
+        WHERE asset_id = %s
+        """
+        asset = execute_query(sql, (asset_id,), "one")
+
+        if asset is None:
+            print("Asset not found")
+            return redirect("/scans")
+
+        target_ip = asset["ip_address"]
+
+        sql = """
+        SELECT scan_id FROM scans 
+        WHERE asset_id = %s 
+        AND status NOT IN ('Done', 'Stopped', 'Interrupted', 'Aborted', 'Failed', 'GVM Complete')
+        """
+        exists = execute_query(sql, (asset_id,), "one")
+
+        if exists:
+            return "Scan already running for this asset"
+
+        # GVM Scan Handler
+        if engine == "GVM":
+            task_id, report_id = start_gvm_scan(target_ip)
+
+            sql = """
+            INSERT INTO scans(
+            asset_id,
+            started_by,
+            engine, 
+            gvm_task_id, 
+            gvm_report_id,
+            status,
+            progress) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            scan_id = execute_query(
+                sql,
+                (
+                    asset_id,
+                    session["user_id"],
+                    "GVM",
+                    task_id,
+                    report_id,
+                    "Requested",
+                    0
+                )
+            )
+
+            log_event(
+                session["user_id"],
+                "START_SCAN",
+                "SCAN",
+                scan_id,
+                f"GVM scan started for asset_id={asset_id}, task_id={task_id}"
+            )
+
+        # AI Scan Handler
+        elif engine == "AI":
+            sql = """
+            INSERT INTO scans (
+            asset_id,
+            started_by,
+            engine,
+            status,
+            progress)
+            VALUES (%s, %s, %s, %s, %s)
+            """
+            scan_id = execute_query(
+                sql,
+                (
+                    asset_id,
+                    session["user_id"],
+                    "AI",
+                    "Running",
+                    0
+                )
+            )
+
+            log_event(
+                session["user_id"],
+                "START_SCAN",
+                "SCAN",
+                scan_id,
+                f"AI scan started for asset_id={asset_id}"
+            )
+
+            user_id = session["user_id"]
+
+            ai_solo_scan_thread = threading.Thread(target=run_scan_thread, args=(scan_id, target_ip, asset_id, user_id))
+            ai_solo_scan_thread.daemon = True
+            ai_solo_scan_thread.start()
+
+        # Full Scan Handler
+        elif engine == "Full":
+            task_id, report_id = start_gvm_scan(target_ip)
+
+            sql = """
+            INSERT INTO scans (
+            asset_id,
+            started_by,
+            engine,
+            gvm_task_id,
+            gvm_report_id,
+            status,
+            progress)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            scan_id = execute_query(
+                sql,
+                (
+                    asset_id,
+                    session["user_id"],
+                    "Full",
+                    task_id,
+                    report_id,
+                    "Running",
+                    0
+                )
+            )
+
+            log_event(
+                session["user_id"],
+                "START_SCAN",
+                "SCAN",
+                scan_id,
+                f"Full scan started for asset_id={asset_id}"
+            )
+
+            user_id = session["user_id"]
+            full_scan_thread = threading.Thread(target=run_full_ai_thread, args=(scan_id, target_ip, asset_id, user_id))
+            full_scan_thread = True
+            full_scan_thread.start()
+
+        else:
+            print("Unknown engine selected: " + str(engine))
+
+    except Exception as e:
+        print("Error starting scan: " + str(e))
+
+    return redirect("/scans")
 
 @app.route("/scans/<int:scan_id>", methods=["GET"])
 def scan_detail(scan_id):
@@ -1021,7 +880,7 @@ def scan_detail(scan_id):
         # Fetch live findings from GVM for display
         findings = []
         FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
-        if (scan["engine"] == "GVM"
+        if (scan["engine"] == "GVM" or scan["engine"] == "Full"
             and scan["status"] in FINISHED_STATES
             and scan.get("gvm_report_id")):
             try:
