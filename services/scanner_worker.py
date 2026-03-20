@@ -3,48 +3,9 @@ import time
 from db import execute_query
 from services.gvm_services import get_gvm_task_status
 from services.gvm_services import get_gvm_findings
+from services.scoring_service import riskforge_score_calc
 
-def riskforge_score_calc(CVSS_score, CRITICALITY, EXPOSURE):
-    """
-    Calculates the RiskForge risk score by adjusting the CVSS score
-    based on the asset's criticality and exposure.
-    """
-    CRITICALITY_VALUES = {
-        "LOW":              0.5,
-        "MEDIUM":           1,
-        "HIGH":             1.5,
-        "MISSION_CRITICAL": 2
-    }
-
-    EXPOSURE_VALUES = {
-        "PRIVATE": 0.75,
-        "PUBLIC":  1
-    }
-
-    if not isinstance(CVSS_score, (int, float)):
-        print("invalid CVSS score")
-        return None
-
-    if CRITICALITY not in CRITICALITY_VALUES:
-        print("invalid criticality value")
-        return None
-
-    elif EXPOSURE not in EXPOSURE_VALUES:
-        print("invalid exposure value")
-        return None
-
-    else:
-        try:
-            Criticality_value = CRITICALITY_VALUES.get(CRITICALITY)
-            exposure_value = EXPOSURE_VALUES.get(EXPOSURE)
-
-            Risk_Forge_score = CVSS_score * Criticality_value * exposure_value
-            return Risk_Forge_score
-        except Exception as e:
-            print("Calculation error: " + str(e))
-            return None
-
-def store_findings(scan_id, asset_id, findings, created_by, min_score=5.0):
+def store_findings(scan_id, asset_id, findings, created_by, min_score=4.0):
     """
     Stores parsed scan findings in the findings table and auto-creates
     tickets for findings above the RiskForge score threshold.
@@ -54,7 +15,7 @@ def store_findings(scan_id, asset_id, findings, created_by, min_score=5.0):
         asset_id (int): ID of the scanned asset
         findings (list): List of finding dictionaries
         created_by (int): user_id of the person creating tickets
-        min_score (float): minimum RiskForge score required to auto-create a ticket
+        min_score (float): minimum RiskForge score required to create a ticket
     """
 
     # Fetch asset criticality and exposure for score calculation
@@ -111,12 +72,11 @@ def store_findings(scan_id, asset_id, findings, created_by, min_score=5.0):
 
         # Auto-create ticket if RiskForge score meets threshold
         if float(riskforge_score) >= float(min_score):
-
-            if riskforge_score >= 15:
+            if riskforge_score >= 9:
                 priority = "Critical"
-            elif riskforge_score >= 10:
+            elif riskforge_score >= 7:
                 priority = "High"
-            elif riskforge_score >= 5:
+            elif riskforge_score >= 4:
                 priority = "Medium"
             else:
                 priority = "Low"
@@ -179,6 +139,9 @@ def check_active_scans():
         engine = scan["engine"]
 
         status, progress = get_gvm_task_status(task_id)
+
+        # Debug Print
+        print(f"Scan {scan_id} is currently {status} and is at {progress}%")
 
         FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
 
@@ -263,19 +226,19 @@ def check_finished_scans():
 
 def start_worker():
     """
-    Starts the background worker thread that monitors active scans.
-    Runs as a daemon so it stops automatically when the app stops.
+    Starts the background worker thread that monitors active scans
     """
+    print("Worker running...")
     worker_thread = threading.Thread(target=worker_loop)
     worker_thread.daemon = True
     worker_thread.start()
 
 def worker_loop():
     """
-    Runs continuously in the background.
-    Every 30 seconds checks for scans needing updates.
+    Runs continuously in the background and checks every 30 seconds
     """
     while True:
+        print("Checking for scans...")
         check_active_scans()
         check_finished_scans()
         time.sleep(30)

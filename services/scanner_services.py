@@ -1,6 +1,7 @@
 import paramiko
 import json
 from db import execute_query
+from services.scanner_worker import store_findings
 
 KALI_HOST = "10.0.96.32"
 KALI_USER = "kali"
@@ -33,7 +34,6 @@ def run_terminal(command):
         print(e)
         return None
 
-
 def run_ping_sweep(subnet):
     """
     Runs a fast nmap ping sweep against a subnet.
@@ -58,7 +58,6 @@ def run_ping_sweep(subnet):
                 ips.append(ip)
 
     return ips
-
 
 def run_os_detection(ip):
     """
@@ -88,7 +87,6 @@ def run_os_detection(ip):
 
     return {"ip": ip, "os": os_name}
 
-
 def run_ai_scan(target_ip, scan_id=None):
     """
     Connects to Kali via SSH, runs the remote scanner script,
@@ -117,7 +115,6 @@ def run_ai_scan(target_ip, scan_id=None):
             output = output + line
 
             if scan_id:
-                from app import execute_query
                 sql = """
                 UPDATE scans
                 SET scanner_output = %s
@@ -147,7 +144,6 @@ def run_ai_scan(target_ip, scan_id=None):
         print("SSH connection failed:")
         print(e)
         return None
-
 
 def run_scan_thread(scan_id, target_ip, asset_id, user_id):
     """
@@ -185,13 +181,11 @@ def run_scan_thread(scan_id, target_ip, asset_id, user_id):
         """
         execute_query(sql, ("Done", 100, summary, scan_id))
 
-
 def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
     """
     Background thread for Full scans.
     Runs the AI scanner in parallel with GVM.
     """
-    from services.scanner_worker import store_findings
 
     result = run_ai_scan(target_ip, scan_id)
 
@@ -218,9 +212,11 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
 
     # Check if GVM is also done — if so mark the whole scan as Done
     sql = """
-    SELECT status FROM scans WHERE scan_id = %s
+    SELECT status 
+    FROM scans 
+    WHERE scan_id = %s
     """
-    current = execute_query(sql, (scan_id,), "one")
+    current = execute_query(sql, (scan_id), "one")
 
     if current and current["status"] == "GVM Complete":
         sql = """
@@ -228,4 +224,4 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
         SET status='Done'
         WHERE scan_id=%s
         """
-        execute_query(sql, (scan_id,))
+        execute_query(sql, (scan_id))
