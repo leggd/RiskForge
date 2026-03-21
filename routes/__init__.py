@@ -1,3 +1,4 @@
+# Init paths for cleaner imports in app.py
 from .auth import auth_bp
 from .dashboard import dashboard_bp
 from .assets import assets_bp

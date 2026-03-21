@@ -1,123 +1,10 @@
 import threading
 import time
 from db import execute_query
-from services.gvm_services import get_gvm_task_status
-from services.gvm_services import get_gvm_findings
-from services.scoring_service import riskforge_score_calc
-
-def store_findings(scan_id, asset_id, findings, created_by, min_score=4.0):
-    """
-    Stores parsed scan findings in the findings table and auto-creates
-    tickets for findings above the RiskForge score threshold.
-
-    Parameters:
-        scan_id (int): ID of the scan the findings belong to
-        asset_id (int): ID of the scanned asset
-        findings (list): List of finding dictionaries
-        created_by (int): user_id of the person creating tickets
-        min_score (float): minimum RiskForge score required to create a ticket
-    """
-
-    # Fetch asset criticality and exposure for score calculation
-    sql = """
-    SELECT criticality, exposure
-    FROM assets
-    WHERE asset_id = %s
-    """
-    asset = execute_query(sql,(asset_id),"one")
-
-    criticality = asset["criticality"] if asset else "MEDIUM"
-    exposure = asset["exposure"] if asset else "PUBLIC"
-
-    for f in findings:
-
-        port = f.get("port")
-        cvss_score = f.get("cvss_score") or 0
-        nvt_name = f.get("nvt_name") or "Unnamed finding"
-        solution = f.get("solution") or ""
-
-        cves_list = f.get("cves", [])
-        cves = ", ".join(cves_list)
-
-        riskforge_score = riskforge_score_calc(float(cvss_score), criticality, exposure)
-
-        if riskforge_score is None:
-            riskforge_score = 0
-
-        sql = """
-        INSERT INTO findings(
-        scan_id, 
-        asset_id, 
-        nvt_name, 
-        port, 
-        cvss_score, 
-        cves, 
-        solution, 
-        riskforge_score)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        execute_query(
-            sql,
-            (
-                scan_id,
-                asset_id,
-                nvt_name,
-                port,
-                cvss_score,
-                cves,
-                solution,
-                riskforge_score
-            )
-        )
-
-        # Auto-create ticket if RiskForge score meets threshold
-        if float(riskforge_score) >= float(min_score):
-            if riskforge_score >= 9:
-                priority = "Critical"
-            elif riskforge_score >= 7:
-                priority = "High"
-            elif riskforge_score >= 4:
-                priority = "Medium"
-            else:
-                priority = "Low"
-
-            title = nvt_name
-
-            description = (
-                f"Source: Scan #{scan_id}\n"
-                f"Asset ID: {asset_id}\n"
-                f"Port: {port or '-'}\n"
-                f"CVSS: {cvss_score}\n"
-                f"RiskForge Score: {riskforge_score}\n"
-                f"CVEs: {cves if cves else 'None'}\n\n"
-                f"Solution:\n{solution if solution else 'No solution provided.'}"
-            )
-
-            ticket_sql = """
-            INSERT INTO tickets (
-            asset_id,
-            scan_id,
-            created_by,
-            title,
-            priority,
-            status,
-            description,
-            riskforge_score)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            execute_query(
-                ticket_sql, 
-                (
-                    asset_id,
-                    scan_id,
-                    created_by,
-                    title,
-                    priority,
-                    "Open",
-                    description,
-                    riskforge_score
-                )
-            )
+from services.gvm_service import get_gvm_task_status
+from services.gvm_service import get_gvm_findings
+from services.findings_service import store_findings
+from services.ticket_service import create_tickets
 
 def check_active_scans():
     """
@@ -141,7 +28,7 @@ def check_active_scans():
         status, progress = get_gvm_task_status(task_id)
 
         # Debug Print
-        print(f"Scan {scan_id} is currently {status} and is at {progress}%")
+        #print(f"Scan {scan_id} is currently {status} and is at {progress}%")
 
         FINISHED_STATES = ("Done", "Stopped", "Interrupted", "Aborted", "Failed")
 
@@ -210,7 +97,9 @@ def check_finished_scans():
         try:
             findings = get_gvm_findings(report_id, limit=200)
 
-            store_findings(scan_id, asset_id, findings, created_by)
+            findings = store_findings(scan_id, asset_id, findings)
+
+            create_tickets(scan_id, asset_id, findings, created_by)
 
             sql = """
             UPDATE scans
@@ -228,7 +117,8 @@ def start_worker():
     """
     Starts the background worker thread that monitors active scans
     """
-    print("Worker running...")
+    # Debug print
+    #print("Worker running...")
     worker_thread = threading.Thread(target=worker_loop)
     worker_thread.daemon = True
     worker_thread.start()
@@ -238,7 +128,8 @@ def worker_loop():
     Runs continuously in the background and checks every 30 seconds
     """
     while True:
-        print("Checking for scans...")
+        # Debug print
+        #print("Checking for scans...")
         check_active_scans()
         check_finished_scans()
         time.sleep(30)

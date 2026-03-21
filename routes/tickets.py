@@ -44,7 +44,7 @@ def tickets():
             filter_parameters.append(priority)
 
         # Always add ordering at the end
-        sql = sql + " ORDER BY tickets.created_at DESC"
+        sql = sql + "ORDER BY riskforge_score DESC, created_at DESC"
         filter_parameters = tuple(filter_parameters)
         # Execute query
         ticket_list = execute_query(sql, filter_parameters, "all")

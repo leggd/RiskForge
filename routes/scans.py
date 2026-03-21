@@ -1,9 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, session
 from db import execute_query
 from services.audit_service import log_event
-from services.gvm_services import start_gvm_scan, get_gvm_task_status, get_gvm_findings
-from services.scanner_services import run_scan_thread, run_full_ai_thread
-from services.scanner_worker import store_findings
+from services.gvm_service import start_gvm_scan, get_gvm_task_status, get_gvm_findings
+from services.scanner_service import run_scan_thread, run_full_ai_thread
 import threading
 
 scans_bp = Blueprint("scans", __name__)
@@ -310,46 +309,3 @@ def scan_detail(scan_id):
 
     except Exception as e:
         return "Error loading scan: " + str(e)
-
-# Manual findings parsing (FOR TESTING ONLY, WILL REMOVE IN PROD)
-@scans_bp.route("/scans/<int:scan_id>/parse_findings", methods=["POST"])
-def parse_findings(scan_id):
-    """
-    Parse findings from the GVM report and store them in findings table
-    """
-    # Require authentication
-    if "user_id" not in session:
-        return redirect("/login")
-
-    try:
-        # Obtain asset_id and report_id to parse and store findings
-        sql = """
-        SELECT asset_id, engine, gvm_report_id
-        FROM scans 
-        WHERE scan_id = %s
-        """
-        scan = execute_query(sql,(scan_id),"one")
-        # Return various errors as HTML page (will use error display logic later)
-        if scan is None:
-            return "Scan not found"
-
-        if scan["engine"] != "GVM":
-            return "This scan is not a GVM scan"
-
-        if not scan["gvm_report_id"]:
-            return "No GVM report ID found for this scan"
-        # Obtain findings list from GVM for particular scan, 200 max
-        findings = get_gvm_findings(scan["gvm_report_id"], limit=200)
-
-        store_findings(
-            scan_id=scan_id,
-            asset_id=scan["asset_id"],
-            findings=findings,
-            created_by=session["user_id"],
-            min_score=5.0,
-        )
-
-        return redirect(f"/scans/{scan_id}")
-
-    except Exception as e:
-        return "Error parsing/storing findings: " + str(e)

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, session
 from db import execute_query
 from pymysql.err import IntegrityError
 from services.audit_service import log_event
-from services.scanner_services import run_ping_sweep, run_os_detection
+from services.scanner_service import run_ping_sweep, run_os_detection
 import ipaddress
 
 assets_bp = Blueprint("assets", __name__)
@@ -10,7 +10,7 @@ assets_bp = Blueprint("assets", __name__)
 @assets_bp.route("/assets", methods=["GET", "POST"])
 def assets():
     """
-    Display and manage active assets.
+    Display and manage active assets
     """
     if "user_id" not in session:
         return redirect("/login")
@@ -18,41 +18,51 @@ def assets():
     error = None
     success = None
 
+    # Add asset block
     if request.method == "POST":
+        # Obtain html form data
         name = request.form.get("name", "").strip()
         ip_address = request.form.get("ip_address", "").strip()
         asset_type = request.form.get("asset_type", "")
         exposure = request.form.get("exposure", "")
         criticality = request.form.get("criticality", "")
         
+        # Error handling for duplicates and IP format
         if not name or not ip_address:
             error = "Name and/or IP address are required."
         else:
+            # Attempt to create ipaddress object from user input IP
+            # If unsuccessful, generate error message and don't add asset
             try:
                 ipaddress.ip_address(ip_address)
             except ValueError:
                 error = "Invalid IP address format."
 
+            # Input validation passed, check for duplicate asset attributes
             if not error:
                 try:
                     sql = """
-                    SELECT asset_id FROM assets
+                    SELECT asset_id
+                    FROM assets
                     WHERE ip_address = %s OR name = %s
                     """
-                    exists = execute_query(sql, (ip_address, name), "one")
+                    exists = execute_query(sql,(ip_address, name),"one")
 
+                    # If record is returned, duplicate asset name or IP found
                     if exists:
                         error = "Asset with that name or IP address already exists"
+                    
+                    # All validation passed, insert new asset record into database
+                    # Immediately obtain asset_id from newly inserted record for audit
                     else:
                         try:
                             sql = """
-                            INSERT INTO assets (
+                            INSERT INTO assets(
                             name, 
                             ip_address,
                             asset_type,
                             exposure,
-                            criticality
-                            ) 
+                            criticality)
                             VALUES (%s, %s, %s, %s, %s)
                             """
                             asset_id = execute_query(
@@ -82,17 +92,21 @@ def assets():
                 except Exception as e:
                     error = "Wider Error: " + str(e)
 
+    # Discover all Online/Active hosts on subnet using nmap, stored as list
     subnet = "10.0.96.0/24"
     discovered_hosts = run_ping_sweep(subnet)
 
+    # Obtain 'clicked' IP from Network Discovery list
     selected_ip = request.args.get("ip")
     selected_os = None
 
+    # Obtain OS best guess from nmap
     if selected_ip:
         result = run_os_detection(selected_ip)
         if result:
             selected_os = result["os"]
 
+    # Obtain full list of stored, active assets
     try:
         sql = """
         SELECT * FROM assets 
@@ -101,6 +115,7 @@ def assets():
         """        
         asset_list = execute_query(sql, None, "all")
 
+    # Catch error and assign empty list to prevent crashing
     except Exception as e:
         asset_list = []
         error = "Database error: " + str(e)
@@ -114,8 +129,7 @@ def assets():
         selected_ip=selected_ip,
         selected_os=selected_os,
         username=session["username"],
-        role=session["role"]
-    )
+        role=session["role"])
 
 @assets_bp.route("/assets/<int:asset_id>", methods=["GET"])
 def asset_detail(asset_id):
@@ -136,7 +150,6 @@ def asset_detail(asset_id):
         SELECT * FROM assets
         WHERE asset_id = %s        
         """
-
         asset = execute_query(sql,(asset_id),"one")
 
         # Will redirect to custom 404 page/error later

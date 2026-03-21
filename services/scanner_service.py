@@ -1,7 +1,8 @@
 import paramiko
 import json
 from db import execute_query
-from services.scanner_worker import store_findings
+from services.findings_service import store_findings
+from services.ticket_service import create_tickets
 
 KALI_HOST = "10.0.96.32"
 KALI_USER = "kali"
@@ -150,8 +151,6 @@ def run_scan_thread(scan_id, target_ip, asset_id, user_id):
     Background thread for AI scans.
     Runs the AI scanner and stores findings and verdict.
     """
-    from services.scanner_worker import store_findings
-
     result = run_ai_scan(target_ip, scan_id)
 
     if result is None:
@@ -168,7 +167,9 @@ def run_scan_thread(scan_id, target_ip, asset_id, user_id):
         findings = result.get("findings", [])
         summary = result.get("summary", "")
 
-        store_findings(scan_id, asset_id, findings, user_id)
+        findings = store_findings(scan_id, asset_id, findings)
+
+        create_tickets(scan_id, asset_id, findings, user_id)
 
         sql = """
         UPDATE scans
@@ -201,7 +202,9 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
         findings = result.get("findings", [])
         summary = result.get("summary", "")
 
-        store_findings(scan_id, asset_id, findings, user_id)
+        findings = store_findings(scan_id, asset_id, findings)
+
+        create_tickets(scan_id, asset_id, findings, user_id)
 
         sql = """
         UPDATE scans
