@@ -94,7 +94,7 @@ def get_gvm_task_status(task_id):
 
         return status, progress
 
-def get_gvm_findings(report_id, limit=10):
+def get_gvm_findings(report_id, limit=200):
     """
     Fetch a GVM report and return the top findings sorted by severity.
 

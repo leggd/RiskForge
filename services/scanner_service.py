@@ -1,7 +1,7 @@
 import paramiko
 import json
 from db import execute_query
-from services.findings_service import store_findings
+from services.findings_service import store_findings, prioritise_findings
 from services.ticket_service import create_tickets
 
 KALI_HOST = "10.0.96.32"
@@ -168,6 +168,8 @@ def run_scan_thread(scan_id, target_ip, asset_id, user_id):
         summary = result.get("summary", "")
 
         findings = store_findings(scan_id, asset_id, findings)
+        
+        findings = prioritise_findings(findings)
 
         create_tickets(scan_id, asset_id, findings, user_id)
 
@@ -203,6 +205,8 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
         summary = result.get("summary", "")
 
         findings = store_findings(scan_id, asset_id, findings)
+        
+        findings = prioritise_findings(findings)
 
         create_tickets(scan_id, asset_id, findings, user_id)
 

@@ -3,7 +3,7 @@ import time
 from db import execute_query
 from services.gvm_service import get_gvm_task_status
 from services.gvm_service import get_gvm_findings
-from services.findings_service import store_findings
+from services.findings_service import store_findings, prioritise_findings
 from services.ticket_service import create_tickets
 
 def check_active_scans():
@@ -95,10 +95,12 @@ def check_finished_scans():
         created_by = scan["started_by"]
 
         try:
-            findings = get_gvm_findings(report_id, limit=200)
+            findings = get_gvm_findings(report_id, limit=100)
 
             findings = store_findings(scan_id, asset_id, findings)
 
+            findings = prioritise_findings(findings)
+            
             create_tickets(scan_id, asset_id, findings, created_by)
 
             sql = """

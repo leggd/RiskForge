@@ -69,3 +69,37 @@ def store_findings(scan_id, asset_id, findings):
         updated_findings.append(f)
 
     return updated_findings
+
+def prioritise_findings(findings):
+    critical = []
+    high = []
+    medium = []
+
+    for f in findings:
+        score = f["riskforge_score"]
+
+        if score >= 9:
+            critical.append(f)
+        elif score >= 7:
+            high.append(f)
+        elif score >= 4:
+            medium.append(f)
+
+    selected = []
+
+    selected.extend(critical[:4])
+    selected.extend(high[:4])
+    selected.extend(medium[:4])
+
+    remaining = []
+
+    for f in findings:
+        if f not in selected:
+            remaining.append(f)
+
+    for f in remaining:
+        if len(selected) >= 12:
+            break
+        selected.append(f)
+        
+    return selected
