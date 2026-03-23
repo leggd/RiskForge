@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Riskforge — Users{% endblock %}
+{% block page_h1 %}Users{% endblock %}
+{% block page_subtitle %}Manage platform users{% endblock %}
+
+{% block content %}
+
+{# *********** Error Handling *********** #}
+{% if error %}
+<div class="card" style="margin-bottom:20px; color:#ff6b6b;">
+  {{ error }}
+</div>
+{% endif %}
+
+<section class="grid two-col">
+
+  {# *********** User List *********** #}
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h2>User Accounts</h2>
+        <p>All registered users</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {# Loop through users passed from backend #}
+          {% for u in users %}
+          <tr>
+            <td>
+            <a href="/users/{{ u.user_id }}">{{ u.username }}</a>
+            </td>
+            <td>{{ u.role }}</td>
+          </tr>
+          {% endfor %}
+
+          {# Handle empty user list #}
+          {% if users|length == 0 %}
+          <tr>
+            <td colspan="2" style="text-align:center;">
+              No users found.
+            </td>
+          </tr>
+          {% endif %}
+
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  {# *********** Create User Form *********** #}
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h2>Create User</h2>
+        <p>Create a new platform account</p>
+      </div>
+    </div>
+
+    {# Submit form to POST route #}
+    <form method="POST" action="/users/create">
+      <div style="padding: 0 16px 16px;">
+
+        {# Username input #}
+        <label class="cell-sub">Username</label>
+        <input
+          name="username"
+          class="select"
+          style="width:100%; margin:8px 0 12px;"
+          required
+        >
+
+        {# Password input #}
+        <label class="cell-sub">Password</label>
+        <input
+          name="password"
+          type="password"
+          class="select"
+          style="width:100%; margin:8px 0 12px;"
+          required
+        >
+
+        {# Role selection (validated server-side) #}
+        <label class="cell-sub">Role</label>
+        <select
+          name="role"
+          class="select"
+          style="width:100%; margin:8px 0 16px;"
+          required
+        >
+          <option value="Viewer">Viewer</option>
+          <option value="Admin">Admin</option>
+        </select>
+
+        {# Form actions #}
+        <div class="row-actions">
+          <button class="btn btn-primary" type="submit">
+            Create User
+          </button>
+          <button class="btn btn-ghost" type="reset">
+            Clear
+          </button>
+        </div>
+
+      </div>
+    </form>
+  </article>
+
+</section>
+
+{% endblock %}

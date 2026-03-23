@@ -43,6 +43,18 @@ def create_tickets(
         # Use finding name as ticket title
         title = nvt_name
 
+        # Prevent duplicate tickets to prevent clutter from PoC
+        sql = """
+        SELECT ticket_id FROM tickets
+        WHERE asset_id = %s
+        AND title = %s
+        AND status = 'Open'
+        """
+        existing = execute_query(sql, (asset_id, title), "one")
+
+        if existing:
+            continue
+
         # Build detailed ticket description for context and remediation
         description = (
             f"Source: Scan #{scan_id}\n"

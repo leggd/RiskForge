@@ -27,6 +27,10 @@ def login():
             sql = "SELECT * FROM users WHERE username = %s"
             user = execute_query(sql, (username,), "one")
 
+            # Prevent login if user account retired
+            if user and user["retired"]:
+                error = "Account is disabled"
+
             # Handle unknown user
             if user is None:
                 error = "User does not exist, contact your Administrator"

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Riskforge — User Detail{% endblock %}
+{% block page_h1 %}User Detail{% endblock %}
+{% block page_subtitle %}View and manage user account{% endblock %}
+
+{% block content %}
+
+<article class="card">
+  <div class="card-head">
+    <div>
+      {# Display username #}
+      <h2>{{ user.username }}</h2>
+      <p>User ID: {{ user.user_id }}</p>
+    </div>
+
+    <div class="card-actions">
+
+      {# Show retire button if user is active #}
+{% if not user.retired and user.user_id != session["user_id"] %}
+  <form method="POST"
+        action="/users/{{ user.user_id }}/retire"
+        style="margin:0;">
+    <button class="btn btn-ghost"
+            type="submit"
+            onclick="return confirm('Retire this user?');">
+      Retire
+    </button>
+  </form>
+{% elif user.user_id == session["user_id"] %}
+  <span class="pill">Current User</span>
+{% else %}
+  <span class="pill">Retired</span>
+{% endif %}
+
+    </div>
+  </div>
+
+  <div style="padding: 0 16px 16px;">
+
+    {# Display user details #}
+    <p><b>Username:</b> {{ user.username }}</p>
+    <p><b>Role:</b> {{ user.role }}</p>
+    <p><b>Status:</b> 
+      {% if user.retired %}
+        Retired
+      {% else %}
+        Active
+      {% endif %}
+    </p>
+
+  </div>
+
+</article>
+
+{% endblock %}

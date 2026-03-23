@@ -2,7 +2,7 @@ import os
 from flask import Flask
 from dotenv import load_dotenv
 from services.scanner_worker import start_worker
-from routes import auth_bp, dashboard_bp, assets_bp, scans_bp, tickets_bp
+from routes import auth_bp, dashboard_bp, assets_bp, scans_bp, tickets_bp, users_bp
 
 # Load environment variables from .env file
 load_dotenv()
@@ -27,6 +27,9 @@ app.register_blueprint(scans_bp)
 
 # Register ticket routes (list, detail, update)
 app.register_blueprint(tickets_bp)
+
+# Register users routes (list, add)
+app.register_blueprint(users_bp)
 
 if __name__ == "__main__":
     # Start background worker for scan processing

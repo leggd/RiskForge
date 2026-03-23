@@ -173,7 +173,6 @@ def dashboard():
         "medium_tickets":medium_tickets,
         "low_tickets":low_tickets,
     }
-
     # Render dashboard page with metrics
     return render_template(
         "dashboard.html",
