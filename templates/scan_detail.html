@@ -6,6 +6,8 @@
 
 {% block content %}
 
+{# *********** Scan Overview *********** #}
+{# Displays scan metadata and nav controls #}
 <div class="card">
   <div class="card-head">
     <div>
@@ -13,90 +15,147 @@
       <p><b>Asset:</b> {{ scan.asset_name }} ({{ scan.asset_ip }})</p>
     </div>
     <div>
+      {# Refresh triggers back end status update ?refresh=1 #}
       <a class="btn btn-ghost" href="/scans/{{ scan.scan_id }}?refresh=1">Refresh</a>
       <a class="btn btn-ghost" href="/scans">Back</a>
     </div>
   </div>
 
   <div style="padding: 0 16px 16px;">
+    {# Basic scan details #}
     <p><b>Engine:</b> {{ scan.engine }}</p>
     <p><b>Status:</b> {{ scan.status }}</p>
     <p><b>Progress:</b> {{ scan.progress }}%</p>
     <p><b>Started:</b> {{ scan.started_at }}</p>
     <p><b>Finished:</b> {{ scan.finished_at if scan.finished_at else "-" }}</p>
 
+    {# Display error message if scan failed #}
     {% if scan.error_message %}
       <p><b>Error:</b> {{ scan.error_message }}</p>
     {% endif %}
 
     <hr style="margin: 16px 0;">
 
-    {% if scan.engine == "GVM" %}
 
-      <h3>GVM Details</h3>
-      <p><b>Task ID:</b> {{ scan.gvm_task_id if scan.gvm_task_id else "-" }}</p>
-      <p><b>Report ID:</b> {{ scan.gvm_report_id if scan.gvm_report_id else "-" }}</p>
+  {# *********** GVM Scan View *********** #}
+  {% if scan.engine == "GVM" %}
 
-      <form method="POST" action="/scans/{{ scan.scan_id }}/parse_findings" style="margin-top:12px;">
-        <button class="btn btn-primary" type="submit">
-          Store Findings & Create Tickets (where CVSS Scores are 5 or higher)
-        </button>
-        <p><i>This will be changed when Danny develops the RiskForge Scoring Logic</i></p>
-      </form>
+    {# Auto-refresh while scan is running #}
+    {% if scan.status in ("Running", "GVM Complete") %}
+      <meta http-equiv="refresh" content="15">
+      <p class="cell-sub">Scan in progress — page refreshes every 15 seconds</p>
+    {% endif %}
 
-      <h3 style="margin-top: 20px;">Stored Findings</h3>
-      <div style="border: 1px solid var(--border); border-radius: var(--radius);">
-        {% if stored_findings and stored_findings|length > 0 %}
-          <table class="table" style="margin: 0;">
-            <thead>
-              <tr>
-                <th>Finding</th>
-                <th>Port</th>
-                <th>CVSS</th>
-                <th>RiskForge Score</th>
-                <th>CVEs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for f in stored_findings %}
-              <tr>
-                <td>{{ f.nvt_name if f.nvt_name else "Unnamed" }}</td>
-                <td>{{ f.port if f.port else "-" }}</td>
-                <td>{{ f.cvss_score }}</td>
-                <td>{{ f.riskforge_score }}</td>
-                <td>{{ f.cves if f.cves else "None" }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+    {# GVM scan status and identifiers #}
+    <h3>GVM Status</h3>
+    <p><b>Task ID:</b> {{ scan.gvm_task_id if scan.gvm_task_id else "-" }}</p>
+    <p><b>Report ID:</b> {{ scan.gvm_report_id if scan.gvm_report_id else "-" }}</p>
+    <p><b>Progress:</b> {{ scan.progress }}%</p>
+
+    <hr style="margin: 16px 0;">
+
+    {# Live findings pulled directly from GVM report #}
+    <h3>Live Findings from GVM</h3>
+    <div class="card" style="padding: 12px; max-height: 280px; overflow-y: auto;">
+      {% if findings and findings|length > 0 %}
+        {% for f in findings %}
+          <div style="margin-bottom: 12px;">
+            <p style="margin: 0;">
+              <b>{{ f.nvt_name if f.nvt_name else "Unnamed" }}</b>
+            </p>
+            <p style="margin: 4px 0 0;">
+              <b>Port:</b> {{ f.port if f.port else "-" }}
+              &nbsp;|&nbsp;
+              <b>CVSS:</b> {{ f.cvss_score }}
+            </p>
+            <p style="margin: 4px 0 0;">
+              <b>CVEs:</b>
+              {% if f.cves and f.cves|length > 0 %}
+                {{ f.cves|join(", ") }}
+              {% else %}
+                None
+              {% endif %}
+            </p>
+            {% if f.solution %}
+              <p style="margin: 6px 0 0;">
+                <b>Solution:</b> {{ f.solution }}
+              </p>
+            {% endif %}
+            <hr style="margin: 10px 0;">
+          </div>
+        {% endfor %}
+      {% else %}
+        <p style="margin: 0;"><i>No findings available yet.</i></p>
+      {% endif %}
+    </div>
+
+    {# Stored findings from database (after processing) #}
+    <h3>Stored Findings</h3>
+    <div style="border: 1px solid var(--border); border-radius: var(--radius);">
+      {% if stored_findings and stored_findings|length > 0 %}
+        <table class="table" style="margin: 0;">
+          <thead>
+            <tr>
+              <th>Finding</th>
+              <th>Port</th>
+              <th>CVSS</th>
+              <th>RiskForge Score</th>
+              <th>CVEs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in stored_findings %}
+            <tr>
+              <td>{{ f.nvt_name if f.nvt_name else "Unnamed" }}</td>
+              <td>{{ f.port if f.port else "-" }}</td>
+              <td>{{ f.cvss_score }}</td>
+              <td>{{ f.riskforge_score }}</td>
+              <td>{{ f.cves if f.cves else "None" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p style="padding: 12px; margin: 0;">
+          <i>No findings stored yet — scan may still be running.</i>
+        </p>
+      {% endif %}
+    </div>
+
+    {# *********** AI Scan View *********** #}
+    {% elif scan.engine == "AI" %}
+
+      {# Auto-refresh page while scan is running #}
+      {% if scan.status in ("Running", "GVM Complete") %}
+        <meta http-equiv="refresh" content="15">
+        <p class="cell-sub">Scan in progress — page refreshes every 15 seconds</p>
+      {% endif %}
+
+      {# Raw scanner output (nmap / custom scanner) #}
+      <h3>Scanner Output</h3>
+      <div class="card" style="padding: 12px; max-height: 200px; overflow-y: auto;">
+        {% if scan.scanner_output %}
+          <pre style="white-space: pre-wrap; margin: 0; font-size: 12px;">
+            {{ scan.scanner_output }}
+          </pre>
         {% else %}
-          <p style="padding: 12px; margin: 0;"><i>No stored findings yet — click Store Findings above.</i></p>
+          <p style="margin: 0;"><i>No output yet.</i></p>
         {% endif %}
       </div>
 
-    {% elif scan.engine == "AI" %}
-{% if scan.status in ("Running", "GVM Complete") %}
-  <meta http-equiv="refresh" content="15">
-  <p class="cell-sub">⟳ Scan in progress — page refreshes every 15 seconds</p>
-{% endif %}
-
-<h3>Scanner Output</h3>
-<div class="card" style="padding: 12px; max-height: 200px; overflow-y: auto;">
-  {% if scan.scanner_output %}
-    <pre style="white-space: pre-wrap; margin: 0; font-size: 12px;">{{ scan.scanner_output }}</pre>
-  {% else %}
-    <p style="margin: 0;"><i>No output yet.</i></p>
-  {% endif %}
-</div>
+      {# AI-generated analysis/verdict #}
       <h3>AI Verdict</h3>
       {% if scan.ai_verdict %}
         <div class="card" style="padding: 12px; margin-bottom: 12px;">
-          <pre style="white-space: pre-wrap; margin: 0;">{{ scan.ai_verdict }}</pre>
+          <pre style="white-space: pre-wrap; margin: 0;">
+            {{ scan.ai_verdict }}
+          </pre>
         </div>
       {% else %}
         <p><i>No AI output stored yet.</i></p>
       {% endif %}
 
+      {# Stored findings from AI scan results #}
       <h3 style="margin-top: 20px;">Stored Findings</h3>
       <div style="border: 1px solid var(--border); border-radius: var(--radius);">
         {% if stored_findings and stored_findings|length > 0 %}
@@ -127,40 +186,50 @@
         {% endif %}
       </div>
 
+    {# *********** Full Scan View (GVM + AI) *********** #}
     {% elif scan.engine == "Full" %}
+
+      {# Auto-refresh while scan is running #}
       {% if scan.status in ("Running", "GVM Complete") %}
-  <meta http-equiv="refresh" content="15">
-  <p class="cell-sub">⟳ Scan in progress — page refreshes every 15 seconds</p>
-{% endif %}
-      <!-- GVM Status -->
+        <meta http-equiv="refresh" content="15">
+        <p class="cell-sub">Scan in progress — page refreshes every 15 seconds</p>
+      {% endif %}
+
+      {# GVM scan status and identifiers #}
       <h3>GVM Status</h3>
       <p><b>Task ID:</b> {{ scan.gvm_task_id if scan.gvm_task_id else "-" }}</p>
       <p><b>Report ID:</b> {{ scan.gvm_report_id if scan.gvm_report_id else "-" }}</p>
       <p><b>Progress:</b> {{ scan.progress }}%</p>
 
       <hr style="margin: 16px 0;">
-<h3>Scanner Output</h3>
-<div class="card" style="padding: 12px; max-height: 400px; overflow-y: auto;">
-  {% if scan.scanner_output %}
-    <pre style="white-space: pre-wrap; margin: 0; font-size: 12px;">{{ scan.scanner_output }}</pre>
-  {% else %}
-    <p style="margin: 0;"><i>No output yet.</i></p>
-  {% endif %}
-</div>
 
+      {# Raw scanner output from AI component #}
+      <h3>Scanner Output</h3>
+      <div class="card" style="padding: 12px; max-height: 400px; overflow-y: auto;">
+        {% if scan.scanner_output %}
+          <pre style="white-space: pre-wrap; margin: 0; font-size: 12px;">
+            {{ scan.scanner_output }}
+          </pre>
+        {% else %}
+          <p style="margin: 0;"><i>No output yet.</i></p>
+        {% endif %}
+      </div>
 
-      <!-- AI Verdict -->
+      {# AI-generated verdict for combined scan #}
       <h3>AI Verdict</h3>
       {% if scan.ai_verdict %}
         <div class="card" style="padding: 12px; margin-bottom: 12px;">
-          <pre style="white-space: pre-wrap; margin: 0;">{{ scan.ai_verdict }}</pre>
+          <pre style="white-space: pre-wrap; margin: 0;">
+            {{ scan.ai_verdict }}
+          </pre>
         </div>
       {% else %}
         <p><i>AI scan still running or no output yet.</i></p>
       {% endif %}
 
       <hr style="margin: 16px 0;">
-      <!-- Live findings direct from GVM -->
+
+      {# Live findings pulled directly from GVM report #}
       <h3 style="margin-top: 20px;">Live Findings from GVM</h3>
       <div class="card" style="padding: 12px; max-height: 280px; overflow-y: auto;">
         {% if findings and findings|length > 0 %}
@@ -194,7 +263,8 @@
           <p style="margin: 0;"><i>No findings available yet.</i></p>
         {% endif %}
       </div>
-      <!-- Stored Findings (combined GVM + AI) -->
+
+      {# Stored findings after processing (combined GVM + AI) #}
       <h3>Stored Findings</h3>
       <div style="border: 1px solid var(--border); border-radius: var(--radius);">
         {% if stored_findings and stored_findings|length > 0 %}
@@ -221,13 +291,17 @@
             </tbody>
           </table>
         {% else %}
-          <p style="padding: 12px; margin: 0;"><i>No findings stored yet — scan may still be running.</i></p>
+          <p style="padding: 12px; margin: 0;">
+            <i>No findings stored yet — scan may still be running.</i>
+          </p>
         {% endif %}
       </div>
 
     {% else %}
+      {# Fallback if scan engine type is unknown #}
       <p><i>Unknown scan engine.</i></p>
     {% endif %}
+
   </div>
 </div>
 

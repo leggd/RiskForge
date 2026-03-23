@@ -6,7 +6,8 @@
 
 {% block content %}
 
-<!-- Row 1: Stat cards -->
+{# *********** KPI Summary Cards *********** #}
+{# Display platform metrics from metrics dictionary passed to render_template() #}
 <section class="grid kpis" style="margin-bottom: 14px;">
 
   <article class="card kpi">
@@ -14,7 +15,9 @@
       <span class="kpi-label">Total Assets</span>
     </div>
     <div class="kpi-value">{{ metrics.total_assets }}</div>
-    <div class="kpi-sub">{{ metrics.active_assets }} active · {{ metrics.retired_assets }} retired</div>
+    <div class="kpi-sub">
+      {{ metrics.active_assets }} active · {{ metrics.retired_assets }} retired
+    </div>
   </article>
 
   <article class="card kpi">
@@ -30,7 +33,9 @@
       <span class="kpi-label">Total Findings</span>
     </div>
     <div class="kpi-value">{{ metrics.total_findings }}</div>
-    <div class="kpi-sub">{{ metrics.critical_findings }} critical · {{ metrics.high_findings }} high</div>
+    <div class="kpi-sub">
+      {{ metrics.critical_findings }} critical · {{ metrics.high_findings }} high
+    </div>
   </article>
 
   <article class="card kpi">
@@ -43,7 +48,8 @@
 
 </section>
 
-<!-- Row 2: Ticket priority breakdown -->
+{# *********** Ticket Priority Breakdown *********** #}
+{# Displays open tickets count by priority level #}
 <section style="max-width: 300px;">
 
   <article class="card">
@@ -52,12 +58,16 @@
         <h2>Ticket Breakdown</h2>
         <p>Open tickets by priority</p>
       </div>
+
+      {# Button link to full tickets page for full detailed view #}
       <a class="btn btn-ghost" href="/tickets">View all</a>
     </div>
 
     <div style="padding: 0 16px 16px;">
       <table class="table">
         <tbody>
+
+          {# Each row ticket count for a specific priority #}
           <tr>
             <td>Critical</td>
             <td>{{ metrics.critical_tickets }}</td>
@@ -74,6 +84,7 @@
             <td>Low</td>
             <td>{{ metrics.low_tickets }}</td>
           </tr>
+
         </tbody>
       </table>
     </div>

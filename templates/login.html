@@ -3,35 +3,50 @@
 {% block title %}Riskforge — Login{% endblock %}
 
 {% block content %}
+
+  {# *********** Login Form *********** #}
   <div class="card" style="width: 420px; max-width: 100%;">
+
     <div class="card-head">
       <div>
         <h2>Riskforge</h2>
         <p>Sign in to the enterprise console</p>
       </div>
     </div>
-    <!-- Display red error message if error variable is passed to render -->
+
+    {# Display error message returned from login route #}
     {% if error %}
       <div style="margin: 12px 0; padding: 10px; border-radius: 10px; text-align:center; border: 1px solid rgba(255,255,255,.12);">
         <span style="color:#fc4242;">{{ error }}</span>
       </div>
     {% endif %}
-    <!-- POST form data to /login route -->
+
+    {# Submit credentials to POST /login route #}
     <form method="POST" action="/login">
       <div style="display:flex; flex-direction:column; gap:12px;">
+
+        {# Username input field #}
         <div>
           <label class="cell-sub">Username</label><br>
           <input name="username" type="text" required style="width:100%; padding:10px; border-radius:10px;">
         </div>
+
+        {# Password input field #}
         <div>
           <label class="cell-sub">Password</label><br>
           <input name="password" type="password" required style="width:100%; padding:10px; border-radius:10px;">
         </div>
+
+        {# Submit button to initiate POST request #}
         <button class="btn btn-primary" type="submit" style="width:100%;">Login</button>
+
       </div>
     </form>
+
     <div style="margin-top:14px; text-align:center;" class="cell-sub">
       Authorised users only
     </div>
+
   </div>
+
 {% endblock %}

@@ -4,30 +4,33 @@ from dotenv import load_dotenv
 from services.scanner_worker import start_worker
 from routes import auth_bp, dashboard_bp, assets_bp, scans_bp, tickets_bp
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
+# Initialise Flask instance
 app = Flask(__name__)
 
-# Set flask secret key for secure signed in sessions
+# Configure secret key for session management
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
-# Register login and logout routes
+# Register authentication routes (login, logout)
 app.register_blueprint(auth_bp)
 
-# Register dashboard route
+# Register dashboard routes
 app.register_blueprint(dashboard_bp)
 
-# Register asset list, individual detail, update and retire routes
+# Register asset management routes (list, detail, update, retire)
 app.register_blueprint(assets_bp)
 
-# Register scan page get and post routes, scan detail, scan starting routes
+# Register scan routes (list, start, detail, status)
 app.register_blueprint(scans_bp)
 
-# Register ticket list, detail and update routes
+# Register ticket routes (list, detail, update)
 app.register_blueprint(tickets_bp)
 
 if __name__ == "__main__":
-    # Start scan findings parsing worker in the background
+    # Start background worker for scan processing
     start_worker()
+
+    # Run Flask application
     app.run(debug=False)

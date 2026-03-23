@@ -19,26 +19,37 @@
   </div>
 
   <div class="table-wrap">
+
+    {# *********** Ticket Filters *********** #}
+    {# Submit selected filters via GET to tickets route #}
     <form method="GET">
-    <label>Status:</label>
-    <select name="status">
+
+      <label>Status:</label>
+      <select name="status">
         <option value="">All</option>
         <option value="Open">Open</option>
         <option value="In Progress">In Progress</option>
         <option value="Closed">Closed</option>
-    </select>
+      </select>
 
-    <label>Priority:</label>
-    <select name="priority">
+      <label>Priority:</label>
+      <select name="priority">
         <option value="">All</option>
         <option value="Critical">Critical</option>
         <option value="High">High</option>
         <option value="Medium">Medium</option>
         <option value="Low">Low</option>
-    </select>
+      </select>
+      <label>Asset:</label>
+      <select name="asset_id">
+        <option value="">All</option>
+        {% for asset in assets %}
+          <option value="{{ asset.asset_id }}">{{ asset.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Apply</button>
+    </form>
 
-    <button type="submit">Apply</button>
-</form>
     <table class="table">
       <thead>
         <tr>
@@ -51,26 +62,69 @@
           <th>Closed</th>
         </tr>
       </thead>
+
       <tbody>
-        <!-- Iterate through tickets list -->
+
+        {# Iterate through tickets list passed from backend #}
         {% for t in tickets %}
         <tr>
           <td>
-            <!-- Generate ticket detail link based on ticket_id -->
+            {# Link to ticket detail page using ticket_id #}
             <a href="/tickets/{{ t.ticket_id }}">
               {{ t.title }}
             </a>
           </td>
-          <!-- Populate ticket information -->
+
+          {# Display ticket attributes #}
           <td>{{ t.asset_name }} ({{ t.asset_ip }})</td>
-          <td>{{ t.priority }}</td>
-          <td>{{ t.riskforge_score }}</td>
-          <td>{{ t.status }}</td>
+          <td>{% if t.priority == "Critical" %}
+                <span class="badge badge-critical">{{ t.priority }}</span>
+              {% elif t.priority == "High" %}
+                <span class="badge badge-high">{{ t.priority }}</span>
+              {% elif t.priority == "Medium" %}
+                <span class="badge badge-med">{{ t.priority }}</span>
+              {% elif t.priority == "Low" %}
+                <span class="badge badge-low">{{ t.priority }}</span>
+              {% else %}
+                <span class="badge">{{ t.priority }}</span>
+              {% endif %}</td>
+          <td>
+              {% set score = t.riskforge_score | float %}
+              {% if score >= 9 %}
+                <span class="badge badge-critical">{{ t.riskforge_score }}</span>
+              {% elif score >= 7 %}
+                <span class="badge badge-high">{{ t.riskforge_score }}</span>
+              {% elif score >= 4 %}
+                <span class="badge badge-med">{{ t.riskforge_score }}</span>
+              {% else %}
+                <span class="badge badge-low">{{ t.riskforge_score }}</span>
+              {% endif %}
+            </td>
+          <td>
+            {% if t.status == "Open" %}
+              <span class="pill pill-open">{{ t.status }}</span>
+            {% elif t.status == "In Progress" %}
+              <span class="pill pill-progress">{{ t.status }}</span>
+            {% elif t.status ==  "Closed" %}
+              <span class="pill pill-mitigated">{{ t.status }}</span>
+            {% else %}
+              <span class="pill">{{ t.status }}</span>
+            {% endif %}
+          </td>
           <td>{{ t.created_at }}</td>
-          <td>{{ t.closed_at if t.closed_at else "-" }}</td>
+
+          {# Display closed timestamp or fallback #}
+          <td>
+            {% if t.closed_at %}
+              {{ t.closed_at }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
-        <!-- Handle empty ticket list -->
+
+        {# Handle empty ticket list #}
         {% if tickets|length == 0 %}
         <tr>
           <td colspan="6" style="text-align:center;">
@@ -78,6 +132,7 @@
           </td>
         </tr>
         {% endif %}
+
       </tbody>
     </table>
   </div>

@@ -9,14 +9,15 @@
 <div class="card">
   <div class="card-head">
     <div>
-      <!-- Populate ticket header from tickets table -->
+      {# Populate ticket header from ticket record #}
       <h2>Ticket #{{ ticket.ticket_id }}</h2>
       <p><b>Asset:</b> {{ ticket.asset_name }} ({{ ticket.asset_ip }})</p>
     </div>
 
     <div>
       <a class="btn btn-ghost" href="/tickets">Back</a>
-      <!-- Show view scan button if associated scan is in ticket record (ideally always be one) -->
+
+      {# Show view scan button if ticket is associated with a scan #}
       {% if ticket.scan_id %}
         <a class="btn btn-ghost" href="/scans/{{ ticket.scan_id }}">View Scan</a>
       {% endif %}
@@ -24,24 +25,58 @@
   </div>
 
   <div style="padding: 0 16px 16px;">
-    <!-- Handle closing tickets without reason (maybe add minimum char limit later)-->
+
+    {# Handle error when closing ticket without providing a reason #}
     {% if request.args.get("err") == "reason_required" %}
-      <p style="margin: 0 0 12px;"><b>Error:</b> Close reason is required when closing a ticket.</p>
+      <p style="margin: 0 0 12px;">
+        <b>Error:</b> Close reason is required when closing a ticket.
+      </p>
     {% endif %}
-    <!-- Populate ticket information from ticket record (improve layout later)-->
+
+    {# Display core ticket information #}
     <p><b>Title:</b> {{ ticket.title }}</p>
-    <p><b>Priority:</b> {{ ticket.priority }}</p>
-    <p><b>Status:</b> {{ ticket.status }}</p>
+    <p><b>Priority:</b>
+    {% if ticket.priority == "Critical" %}
+      <span class="badge badge-critical">{{ ticket.priority }}</span>
+    {% elif ticket.priority == "High" %}
+      <span class="badge badge-high">{{ ticket.priority }}</span>
+    {% elif ticket.priority == "Medium" %}
+      <span class="badge badge-med">{{ ticket.priority }}</span>
+    {% elif ticket.priority == "Low" %}
+      <span class="badge badge-low">{{ ticket.priority }}</span>
+    {% else %}
+    <span class="badge">{{ ticket.priority }}</span>
+    {% endif %}</p>
+    <p><b>Status:</b>
+    {% if ticket.status == "Open" %}
+      <span class="pill pill-open">{{ ticket.status }}</span>
+    {% elif ticket.status == "In Progress" %}
+      <span class="pill pill-progress">{{ ticket.status }}</span>
+    {% elif ticket.status ==  "Closed" %}
+      <span class="pill pill-mitigated">{{ ticket.status }}</span>
+    {% else %}
+      <span class="pill">{{ ticket.status }}</span>
+    {% endif %}</p>
     <p><b>Created:</b> {{ ticket.created_at }}</p>
-    <p><b>Closed:</b> {{ ticket.closed_at if ticket.closed_at else "-" }}</p>
+
+    {# Display closed timestamp or fallback #}
+    <p><b>Closed:</b>
+      {% if ticket.closed_at %}
+        {{ ticket.closed_at }}
+      {% else %}
+        -
+      {% endif %}
+    </p>
 
     <hr style="margin: 16px 0;">
 
+    {# *********** Ticket Description *********** #}
     <h3>Description</h3>
     <div class="card" style="padding: 12px; margin-bottom: 12px;">
       <pre style="white-space: pre-wrap; margin: 0;">{{ ticket.description }}</pre>
     </div>
 
+    {# Display close reason only if ticket has been closed with a reason #}
     {% if ticket.closed_reason %}
       <h3>Close Reason</h3>
       <div class="card" style="padding: 12px; margin-bottom: 12px;">
@@ -51,24 +86,37 @@
 
     <hr style="margin: 16px 0;">
 
+    {# *********** Update Ticket Form *********** #}
     <h3>Update Ticket</h3>
-    <!-- Handle ticket update pass form information to /sticks/id/update route-->
+
+    {# Submit updated ticket data to POST route #}
     <form method="POST" action="/tickets/{{ ticket.ticket_id }}/update">
+
       <label class="cell-sub">Status</label>
       <select class="select" style="width:100%; margin:8px 0 12px;" name="status" required>
-        <!-- Prefill option depending on current status-->
+
+        {# Pre-select option based on current ticket status #}
         <option value="Open" {% if ticket.status == "Open" %}selected{% endif %}>Open</option>
         <option value="In Progress" {% if ticket.status == "In Progress" %}selected{% endif %}>In Progress</option>
-        <option value="Resolved" {% if ticket.status == "Resolved" %}selected{% endif %}>Resolved</option>
         <option value="Closed" {% if ticket.status == "Closed" %}selected{% endif %}>Closed</option>
+
       </select>
 
       <label class="cell-sub">Close reason (required if closing)</label>
+
+      {# Prefill close reason if it exists, otherwise leave blank #}
       <textarea class="select" style="width:100%; margin:8px 0 16px; min-height:120px;"
                 name="closed_reason"
-                placeholder="e.g. Fix applied, Accepted risk, Mitigated, False positive...">{{ ticket.closed_reason if ticket.closed_reason else "" }}</textarea>
+                placeholder="e.g. Fix applied, Accepted risk, Mitigated, False positive...">
+{% if ticket.closed_reason %}
+{{ ticket.closed_reason }}
+{% else %}
+{% endif %}
+      </textarea>
 
+      {# Submit updated ticket values #}
       <button class="btn btn-primary" type="submit">Save Changes</button>
+
     </form>
   </div>
 </div>

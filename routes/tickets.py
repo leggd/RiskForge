@@ -7,15 +7,23 @@ tickets_bp = Blueprint("tickets", __name__)
 @tickets_bp.route("/tickets", methods=["GET"])
 def tickets():
     """
-    Display all tickets (newest first).
+    Render the tickets page
+
+    Displays all tickets with optional filtering by status and
+    priority, ordered by risk score and creation date
     """
-    # Require authentication
+
+    # Ensure user is authenticated via session cookie
     if "user_id" not in session:
         return redirect("/login")
+
+    # Retrieve optional filter parameters from query string
     status = request.args.get("status")
     priority = request.args.get("priority")
-    
+    asset_id = request.args.get("asset_id")
+
     try:
+        # Retrieve tickets with associated asset details
         sql = """
         SELECT
         tickets.ticket_id,
@@ -31,44 +39,67 @@ def tickets():
         JOIN assets ON tickets.asset_id = assets.asset_id
         WHERE 1=1
         """
+        # Retrieve active assets for filter dropdown
+        assets_sql = """
+        SELECT asset_id, name
+        FROM assets
+        WHERE retired = FALSE
+        ORDER BY name ASC
+        """
+        asset_list = execute_query(assets_sql, None, "all")
+        
         filter_parameters = []
 
-        # Filter by status
+        # Apply status filter if provided
         if status is not None and status != "":
-            sql = sql + " AND tickets.status = %s"
+            sql += " AND tickets.status = %s"
             filter_parameters.append(status)
 
-        # Filter by priority
+        # Apply priority filter if provided
         if priority is not None and priority != "":
-            sql = sql + " AND tickets.priority = %s"
+            sql += " AND tickets.priority = %s"
             filter_parameters.append(priority)
+        
+        # Apply asset filter if provided
+        if asset_id is not None and asset_id != "":
+            sql += " AND tickets.asset_id = %s"
+            filter_parameters.append(asset_id)
 
-        # Always add ordering at the end
-        sql = sql + "ORDER BY riskforge_score DESC, created_at DESC"
+        # Apply ordering by risk score and creation date
+        sql += "ORDER BY riskforge_score DESC, created_at DESC"
         filter_parameters = tuple(filter_parameters)
-        # Execute query
+
+        # Obtain ticket list with applied filters
         ticket_list = execute_query(sql, filter_parameters, "all")
 
     except Exception as e:
+        # Fallback to empty list if database query fails
         ticket_list = []
-        print("Error loading tickets:", e)
+        print("Error loading tickets: " + str(e))
 
+    # Render tickets page with retrieved data
     return render_template(
         "tickets.html",
         tickets=ticket_list,
+        assets=asset_list,
         username=session["username"],
         role=session["role"])
 
 @tickets_bp.route("/tickets/<int:ticket_id>", methods=["GET"])
 def ticket_detail(ticket_id):
     """
-    Display a single ticket and show a simple status update form.
+    Render the ticket detail page
+
+    Displays a single ticket with associated asset information
+    and provides a status update interface.
     """
-    # Require authentication
+
+    # Ensure user is authenticated via session cookie
     if "user_id" not in session:
         return redirect("/login")
 
     try:
+        # Retrieve ticket details with associated asset information
         sql = """
         SELECT
         tickets.*,
@@ -78,39 +109,46 @@ def ticket_detail(ticket_id):
         JOIN assets ON tickets.asset_id = assets.asset_id
         WHERE tickets.ticket_id = %s
         """
-        ticket = execute_query(sql, (ticket_id),"one")
+        ticket = execute_query(sql, (ticket_id), "one")
 
+        # Handle missing ticket record (should never happen)
         if ticket is None:
             return "Ticket not found"
 
+        # Render ticket detail page with retrieved data
         return render_template(
             "ticket_detail.html",
             ticket=ticket,
             username=session["username"],
             role=session["role"])
 
+    # Handle unexpected errors during retrieval
     except Exception as e:
         return "Error loading ticket: " + str(e)
 
 @tickets_bp.route("/tickets/<int:ticket_id>/update", methods=["POST"])
 def update_ticket(ticket_id):
     """
-    Update ticket status and optional closed reason
-    If the status is set to Closed, a reason is required
+    Update a ticket
+
+    Validates status changes, enforces reason when closing,
+    updates the ticket record and logs status transition.
     """
-    # Require authentication
+
+    # Ensure user is authenticated via session cookie
     if "user_id" not in session:
         return redirect("/login")
 
-    # Obtain data from page forms
+    # Retrieve form input
     status = request.form.get("status", "Open").strip()
     closed_reason = request.form.get("closed_reason", "").strip()
 
-    # If user closes ticket, force a reason
+    # Enforce reason when closing a ticket
     if status == "Closed" and not closed_reason:
         return redirect(f"/tickets/{ticket_id}?err=reason_required")
 
     try:
+        # Retrieve current ticket status for comparison
         sql = """
         SELECT status
         FROM tickets
@@ -118,12 +156,13 @@ def update_ticket(ticket_id):
         """
         current_ticket = execute_query(sql, (ticket_id), "one")
 
+        # Handle missing ticket record (should never happen)
         if current_ticket is None:
             return "Ticket not found"
 
         old_status = current_ticket["status"]
 
-        # If closing set closed_at and store reason values
+        # Handle ticket closure (set reason and timestamp)
         if status == "Closed":
             sql = """
             UPDATE tickets
@@ -132,8 +171,9 @@ def update_ticket(ticket_id):
             closed_at=NOW()
             WHERE ticket_id=%s
             """
-            execute_query(sql,(status, closed_reason, ticket_id,))
+            execute_query(sql, (status, closed_reason, ticket_id,))
 
+            # Record audit log for ticket closure
             log_event(
                 session["user_id"],
                 "TICKET_CLOSED",
@@ -143,16 +183,17 @@ def update_ticket(ticket_id):
             )
 
         else:
-            # If re-opening clear close fields
+            # Handle reopening or status change (clear closure fields)
             sql = """
             UPDATE tickets
             SET status=%s,
-                closed_reason=NULL,
-                closed_at=NULL
+            closed_reason=NULL,
+            closed_at=NULL
             WHERE ticket_id=%s
             """
             execute_query(sql, (status, ticket_id,))
        
+        # Log status change if different from previous state
         if old_status != status:
             log_event(
                 session["user_id"],
@@ -161,7 +202,10 @@ def update_ticket(ticket_id):
                 ticket_id,
                 f"Ticket status changed from {old_status} to {status}"
             )
+
+        # Redirect to ticket detail page after update
         return redirect(f"/tickets/{ticket_id}")
     
+    # Handle unexpected errors during update
     except Exception as e:
         return "Error updating ticket: " + str(e)

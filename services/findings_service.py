@@ -3,11 +3,14 @@ from services.scoring_service import riskforge_score_calc
 
 def store_findings(scan_id, asset_id, findings):
     """
-    Stores parsed scan findings in the findings table.
-    Returns findings with riskforge_score added.
+    Store parsed scan findings in the database and calculate RiskForge scores
+
+    Retrieves asset context (criticality and exposure), calculates a
+    riskforge_score for each finding, inserts records into the findings table
+    and returns the findings with scores attached
     """
 
-    # Fetch asset criticality and exposure
+    # Fetch asset criticality and exposure to calculate score
     sql = """
     SELECT criticality, exposure
     FROM assets
@@ -15,29 +18,49 @@ def store_findings(scan_id, asset_id, findings):
     """
     asset = execute_query(sql, (asset_id), "one")
 
-    criticality = asset["criticality"] if asset else "MEDIUM"
-    exposure = asset["exposure"] if asset else "PUBLIC"
+    # Apply defaults if asset not found (shouldn't happen)
+    if asset:
+        criticality = asset["criticality"]
+    else:
+        criticality = "MEDIUM"
+    if asset:
+        exposure = asset["exposure"]
+    else:
+        exposure = "PUBLIC"
 
+    # Store updated findings with calculated scores
     updated_findings = []
 
-    for f in findings:
+    # Iterate through parsed findings
+    for finding in findings:
 
-        port = f.get("port")
-        cvss_score = f.get("cvss_score") or 0
-        nvt_name = f.get("nvt_name") or "Unnamed finding"
-        solution = f.get("solution") or ""
+        # Extract relevant fields with safe defaults
+        port = finding.get("port")
+        cvss_score = finding.get("cvss_score")
+        if cvss_score is None:
+            cvss_score = 0
+        nvt_name = finding.get("nvt_name")
+        if nvt_name is None:
+            nvt_name = "Unnamed finding"
+        solution = finding.get("solution")
+        if solution is None:
+            solution = ''
 
-        cves_list = f.get("cves", [])
+        # Convert CVE list into string for storage
+        cves_list = finding.get("cves")
+        if cves_list is None:
+            cves_list = []
         cves = ", ".join(cves_list)
 
+        # Calculate RiskForge score using CVSS + asset context
         riskforge_score = riskforge_score_calc(
-            float(cvss_score), criticality, exposure
-        )
+            float(cvss_score), criticality, exposure)
 
+        # Fallback if scoring function returns None
         if riskforge_score is None:
             riskforge_score = 0
 
-        # store in DB
+        # Insert finding into database
         sql = """
         INSERT INTO findings(
         scan_id, 
@@ -65,41 +88,58 @@ def store_findings(scan_id, asset_id, findings):
             ),
         )
         
-        f["riskforge_score"] = riskforge_score
-        updated_findings.append(f)
+        # Attach calculated score to finding variable for further use
+        finding["riskforge_score"] = riskforge_score
+        updated_findings.append(finding)
 
+    # Return parsed findings with RiskForge score included
     return updated_findings
 
 def prioritise_findings(findings):
+    """
+    Select a balanced subset of findings for ticket creation PoC
+
+    Findings are grouped by RiskForge score into critical, high and medium
+    categories. Up to four findings are selected from each category then
+    any remaining slots (up to 12 total) are filled with the next
+    highest findings
+    """
+
+    # Initiate list variables for each severity level
     critical = []
     high = []
     medium = []
 
-    for f in findings:
-        score = f["riskforge_score"]
+    # Categorise findings based on different riskforge_score thresholds
+    for finding in findings:
+        score = finding["riskforge_score"]
 
         if score >= 9:
-            critical.append(f)
+            critical.append(finding)
         elif score >= 7:
-            high.append(f)
+            high.append(finding)
         elif score >= 4:
-            medium.append(f)
+            medium.append(finding)
 
+    # Store final selected findings for ticket creation
     selected = []
 
+    # Select up to 4 findings from each priority tier
     selected.extend(critical[:4])
     selected.extend(high[:4])
     selected.extend(medium[:4])
 
+    # Collect remaining findings not yet selected
     remaining = []
+    for finding in findings:
+        if finding not in selected:
+            remaining.append(finding)
 
-    for f in findings:
-        if f not in selected:
-            remaining.append(f)
-
-    for f in remaining:
+    # Fill remaining slots up to maximum total of 12
+    for finding in remaining:
         if len(selected) >= 12:
             break
-        selected.append(f)
+        selected.append(finding)
         
+    # Return prioritised findings
     return selected

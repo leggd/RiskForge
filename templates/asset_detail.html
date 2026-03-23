@@ -5,20 +5,32 @@
 {% block page_subtitle %}View and edit asset{% endblock %}
 
 {% block content %}
+
+{# Display error message if passed to render_template() #}
+{% if error %}
+<div class="card" style="margin-bottom:20px; color:#ff6b6b;">
+  {{ error }}
+</div>
+{% endif %}
+
 <article class="card">
 <div class="card-head">
   <div>
-    <!-- Populate asset name and IP address in card header-->
+    {# Display asset name and IP address in header #}
     <h2>{{ asset.name }}</h2>
     <p>{{ asset.ip_address }}</p>
   </div>
-  <!-- Display edit button and other page elements if user is just viewing the asset -->
+
+  {# Show action buttons only when not in edit mode #}
   {% if not edit_mode %}
     <div class="card-actions">
+
+      {# Enable edit mode via parameter ?edit=1 #}
       <a class="btn btn-primary" href="/assets/{{ asset.asset_id }}?edit=1">
         Edit
       </a>
-      <!-- If asset has not been marked as retired previously, show button to retire -->
+
+      {# Show retire option only if asset is not already retired #}
       {% if not asset.retired %}
         <form method="POST"
               action="/assets/{{ asset.asset_id }}/retire"
@@ -30,65 +42,86 @@
           </button>
         </form>
       {% else %}
+        {# Display retired status if asset is already retired #}
         <span class="pill">Retired</span>
       {% endif %}
     </div>
   {% endif %}
 </div>
-  <!-- If edit mode enable, allow entry and changing of asset details -->
-  {% if edit_mode %}
-  <!-- Call assets/id/update POST route if form is submitted -->
-    <form method="POST" action="/assets/{{ asset.asset_id }}/update">
-      <div style="padding: 0 16px 16px;">
-        <!-- Prefill editable text boxes with information currently held in database -->
-        <label class="cell-sub">Asset name</label>
-        <input class="select" style="width:100%; margin:8px 0 12px;"
-               name="name" value="{{ asset.name }}" required>
 
-        <label class="cell-sub">IP address</label>
-        <input class="select" style="width:100%; margin:8px 0 12px;"
-               name="ip_address" value="{{ asset.ip_address }}" required>
+{# *********** Edit Mode Form *********** #}
 
-        <label class="cell-sub">Asset Type</label>
-        <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_type" required>
-          <!-- Prefill Asset Type options depending on current selection held in the database -->
-          <option value="WEB_SERVER" {% if asset.asset_type == "WEB_SERVER" %}selected{% endif %}>Web Server</option>
-          <option value="FILE_SERVER" {% if asset.asset_type == "FILE_SERVER" %}selected{% endif %}>File Server</option>
-          <option value="DATABASE_SERVER" {% if asset.asset_type == "DATABASE_SERVER" %}selected{% endif %}>Database Server</option>
-          <option value="WORKSTATION" {% if asset.asset_type == "WORKSTATION" %}selected{% endif %}>Workstation</option>
-          <option value="OTHER" {% if asset.asset_type == "OTHER" %}selected{% endif %}>Other</option>
-        </select>
+{% if edit_mode %}
 
-        <label class="cell-sub">Exposure</label>
-        <!-- Prefill Exposure options depending on current selection held in the database -->
-        <select class="select" style="width:100%; margin:8px 0 12px;" name="exposure" required>
-          <option value="PUBLIC" {% if asset.exposure == "PUBLIC" %}selected{% endif %}>Public</option>
-          <option value="PRIVATE" {% if asset.exposure == "PRIVATE" %}selected{% endif %}>Private</option>
-        </select>
-
-        <label class="cell-sub">Criticality</label>
-        <!-- Prefill Criticality options depending on current selection held in the database -->
-        <select class="select" style="width:100%; margin:8px 0 16px;" name="criticality" required>
-          <option value="LOW" {% if asset.criticality == "LOW" %}selected{% endif %}>Low</option>
-          <option value="MEDIUM" {% if asset.criticality == "MEDIUM" %}selected{% endif %}>Medium</option>
-          <option value="HIGH" {% if asset.criticality == "HIGH" %}selected{% endif %}>High</option>
-          <option value="MISSION_CRITICAL" {% if asset.criticality == "MISSION_CRITICAL" %}selected{% endif %}>Mission-critical</option>
-        </select>
-
-        <div class="row-actions">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-ghost" href="/assets/{{ asset.asset_id }}"> Cancel</a>
-        </div>
-    </form>
-  {% else %}
+  {# Submit updated asset data to POST route #}
+  <form method="POST" action="/assets/{{ asset.asset_id }}/update">
     <div style="padding: 0 16px 16px;">
-      <!-- If not editing details show asset details as held on database -->
-      <p><b>Type:</b> {{ asset.asset_type }}</p>
-      <p><b>Exposure:</b> {{ asset.exposure }}</p>
-      <p><b>Criticality:</b> {{ asset.criticality }}</p>
-      <p><b>Last scanned:</b> {{ asset.last_scanned_at if asset.last_scanned_at else "Never" }}</p>
+
+      {# Prefill form fields with existing asset values #}
+      <label class="cell-sub">Asset name</label>
+      <input class="select" style="width:100%; margin:8px 0 12px;"
+             name="name" value="{{ asset.name }}" required>
+
+      <label class="cell-sub">IP address</label>
+      <input class="select" style="width:100%; margin:8px 0 12px;"
+             name="ip_address" value="{{ asset.ip_address }}" required>
+
+      <label class="cell-sub">Asset Type</label>
+      {# Maintain selected option based on current value #}
+      <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_type" required>
+        <option value="WEB_SERVER" {% if asset.asset_type == "WEB_SERVER" %}selected{% endif %}>Web Server</option>
+        <option value="FILE_SERVER" {% if asset.asset_type == "FILE_SERVER" %}selected{% endif %}>File Server</option>
+        <option value="DATABASE_SERVER" {% if asset.asset_type == "DATABASE_SERVER" %}selected{% endif %}>Database Server</option>
+        <option value="WORKSTATION" {% if asset.asset_type == "WORKSTATION" %}selected{% endif %}>Workstation</option>
+        <option value="OTHER" {% if asset.asset_type == "OTHER" %}selected{% endif %}>Other</option>
+      </select>
+
+      <label class="cell-sub">Exposure</label>
+      {# Maintain selected exposure value #}
+      <select class="select" style="width:100%; margin:8px 0 12px;" name="exposure" required>
+        <option value="PUBLIC" {% if asset.exposure == "PUBLIC" %}selected{% endif %}>Public</option>
+        <option value="PRIVATE" {% if asset.exposure == "PRIVATE" %}selected{% endif %}>Private</option>
+      </select>
+
+      <label class="cell-sub">Criticality</label>
+      {# Maintain selected criticality value #}
+      <select class="select" style="width:100%; margin:8px 0 16px;" name="criticality" required>
+        <option value="LOW" {% if asset.criticality == "LOW" %}selected{% endif %}>Low</option>
+        <option value="MEDIUM" {% if asset.criticality == "MEDIUM" %}selected{% endif %}>Medium</option>
+        <option value="HIGH" {% if asset.criticality == "HIGH" %}selected{% endif %}>High</option>
+        <option value="MISSION_CRITICAL" {% if asset.criticality == "MISSION_CRITICAL" %}selected{% endif %}>Mission-critical</option>
+      </select>
+
+      {# Form action buttons #}
+      <div class="row-actions">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-ghost" href="/assets/{{ asset.asset_id }}"> Cancel</a>
+      </div>
+
     </div>
-  {% endif %}
+  </form>
+
+{% else %}
+
+  {# *********** Read-Only View *********** #}
+
+  <div style="padding: 0 16px 16px;">
+    {# Display asset details when not in edit mode #}
+    <p><b>Type:</b> {{ asset.asset_type }}</p>
+    <p><b>Exposure:</b> {{ asset.exposure }}</p>
+    <p><b>Criticality:</b> {{ asset.criticality }}</p>
+
+    {# Show last scanned timestamp or fallback 'Never' #}
+    <p><b>Last scanned:</b>
+      {% if asset.last_scanned_at %}
+        {{ asset.last_scanned_at }}
+      {% else %}
+        Never
+      {% endif %}
+    </p>
+  </div>
+
+{% endif %}
 
 </div>
 </article>

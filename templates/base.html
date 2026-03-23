@@ -1,18 +1,24 @@
+{# Base layout for main application, includes sidebar, topbar and content area #}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Page title can be overridden by child templates -->
+  {# Page title block overridden by child templates #}
   <title>{% block title %}Riskforge{% endblock %}</title>
 
+    {# Global stylesheet for consistency #}
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 
 <body>
   <div class="app">
+
+    {# *********** Sidebar Navigation *********** #}
     <aside class="sidebar">
+
+      {# Application branding #}
       <div class="brand">
         <div class="logo" aria-hidden="true"></div>
         <div>
@@ -21,6 +27,7 @@
         </div>
       </div>
 
+      {# Primary navigation links #}
       <nav class="nav">
         <div class="nav-section">Manage</div>
         <a class="nav-item" href="/dashboard"><span class="nav-dot"></span>Dashboard</a>
@@ -30,6 +37,7 @@
 
         <div class="nav-section">Insights</div>
         <a class="nav-item" href="#"><span class="nav-dot"></span>Reports</a>
+
         <div class="nav-section">Admin</div>
         <a class="nav-item" href="#"><span class="nav-dot"></span>Users</a>
         <a class="nav-item" href="#"><span class="nav-dot"></span>Settings</a>
@@ -39,51 +47,74 @@
 
     <div class="main">
 
+      {# *********** Top Navigation Bar *********** #}
       <header class="topbar">
+
         <div class="topbar-left">
+
+          {# Sidebar toggle button (no functionality yet) #}
           <button class="icon-btn" type="button" aria-label="Open menu">☰</button>
 
+          {# Page title and subtitle (defined by child templates) #}
           <div class="page-title">
-            <!-- Child templates can override headings and paragraphs -->
             <h1>{% block page_h1 %}Dashboard{% endblock %}</h1>
             <p>{% block page_subtitle %}Security posture overview{% endblock %}</p>
           </div>
         </div>
 
         <div class="topbar-right">
+
+          {# Search input (no functionality yet) #}
           <label class="search">
             <span class="search-icon" aria-hidden="true">⌕</span>
             <input type="search" placeholder="Search assets, tickets, CVEs…" />
           </label>
 
+          {# Quick action button to start a new scan #}
           <a class="btn btn-primary" href="/scans">New Scan</a>
 
+          {# User session display (username + role from backend) #}
           <div class="user">
+
+            {# Avatar shows first letter of username or fallback value #}
             <div class="avatar" aria-hidden="true">
-              <!-- Show session username if available-->
-              {{ (username[0] | upper) if username is defined and username else "U" }}
+              {% if username %}
+                {{ username[0] | upper }}
+              {% else %}
+                U
+              {% endif %}
             </div>
-            <!-- Show username and role -->
+
+            {# Display authenticated user name and role #}
             <div class="user-meta">
               <div class="user-name">{{ username }}</div>
               <div class="user-role">{{ role }}</div>
             </div>
+
           </div>
         </div>
       </header>
 
+      {# *********** Main Content Area *********** #}
       <main class="content">
+
+        {# Child templates inject page-specific content here #}
         {% block content %}
-        <!-- Child templates put page content in this block -->
         {% endblock %}
+
       </main>
 
+      {# *********** Footer *********** #}
       <footer class="footer">
+
+        {# Static footer text #}
         <span class="cell-sub">© Riskforge Platform • Internal use</span>
+
+        {# Optional last updated value (no functionality yet) #}
         <span class="cell-sub">
-          <!-- Last website update date will go here, may remove-->
-          Last updated: {{ last_updated if last_updated is defined else "#" }}
+          Last updated: #
         </span>
+
       </footer>
 
     </div>
