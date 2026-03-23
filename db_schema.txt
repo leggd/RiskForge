@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 19, 2026 at 05:21 PM
+-- Generation Time: Mar 23, 2026 at 02:31 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -12,7 +12,7 @@ START TRANSACTION;
 SET time_zone = "+00:00";
 
 --
--- Database: `riskforge`
+-- Database: `riskforge_new`
 --
 
 -- --------------------------------------------------------
@@ -126,15 +126,16 @@ CREATE TABLE `users` (
   `username` varchar(50) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `role` enum('ADMIN','VIEWER') NOT NULL DEFAULT 'VIEWER',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `retired` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `created_at`) VALUES
-(1, 'admin', '$2b$12$6aC7CRtpFJd294Hd.GD/LOcT5jQe2yjMlcucUmIQhba/C43GFlCfO', 'ADMIN', '2026-03-03 21:44:49');
+INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `created_at`, `retired`) VALUES
+(1, 'admin', '$2b$12$6aC7CRtpFJd294Hd.GD/LOcT5jQe2yjMlcucUmIQhba/C43GFlCfO', 'ADMIN', '2026-03-03 21:44:49', 0);
 
 --
 -- Indexes for dumped tables
@@ -224,7 +225,7 @@ ALTER TABLE `tickets`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Constraints for dumped tables
