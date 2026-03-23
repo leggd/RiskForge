@@ -23,7 +23,7 @@ load_dotenv()
 # Suppress SSL warnings caused by university network proxy blocking certificate verification
 # ── CONFIG ───────────────────────────────────────────────────────────────────
 # Groq LLM model used for AI vulnerability analysis
-GROQ_API_KEY = "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"
+GROQ_API_KEY = ""
 GROQ_MODEL   = "llama-3.1-8b-instant"
 
 # Database
