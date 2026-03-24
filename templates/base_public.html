@@ -1,23 +1,25 @@
-{# Base layout for login page #}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  {# Page title block that can be overridden by child templates #}
   <title>{% block title %}Riskforge{% endblock %}</title>
 
-  {# Global stylesheet for consistency #}
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 
 <body>
 
-  {# Centered container for login content #}
-  <main style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;">
-    
-    {# Content block for login form or other pages not requiring session #}
+  {# Full-page centered layout with subtle background #}
+  <main style="
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    background: radial-gradient(circle at top, #0f172a, #020617);
+  ">
 
     {% block content %}
     {% endblock %}

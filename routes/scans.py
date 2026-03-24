@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, session
+from flask import Blueprint, render_template, request, redirect, session, abort
 from db import execute_query
 from services.audit_service import log_event
+from services.auth_utils import require_role
 from services.gvm_service import start_gvm_scan, get_gvm_task_status, get_gvm_findings
 from services.scanner_service import run_scan_thread, run_full_ai_thread
 import threading
@@ -19,7 +20,6 @@ def scans():
     # Ensure user is authenticated via session cookie
     if "user_id" not in session:
         return redirect("/login")
-
     try:
         # Retrieve scan history with associated asset details
         sql = """
@@ -73,6 +73,10 @@ def start_scan():
     # Ensure user is authenticated via session cookie
     if "user_id" not in session:
         return redirect("/login")
+    
+    # RBAC check
+    if not require_role("ADMIN"):
+        abort(403,description="Only admins can start scans")
 
     # Retrieve selected asset and scan engine from form input
     asset_id = request.form.get("asset_id")
@@ -271,7 +275,7 @@ def scan_detail(scan_id):
 
         # Return 404 if scan does not exist (should never happen)
         if scan is None:
-            return "Scan not found", 404
+            abort(404)
 
         # Refresh scan status and progress if requested
         if refresh:

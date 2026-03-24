@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, session
+from flask import Blueprint, render_template, request, redirect, session, abort
 from db import execute_query
 from services.audit_service import log_event
+from services.auth_utils import require_role
 
 tickets_bp = Blueprint("tickets", __name__)
 
@@ -138,7 +139,11 @@ def update_ticket(ticket_id):
     # Ensure user is authenticated via session cookie
     if "user_id" not in session:
         return redirect("/login")
-
+    
+    # RBAC for ticket updating
+    if not require_role("ADMIN"):
+        abort(403, description="Only admins can update tickets")
+        
     # Retrieve form input
     status = request.form.get("status", "Open").strip()
     closed_reason = request.form.get("closed_reason", "").strip()

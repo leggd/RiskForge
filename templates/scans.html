@@ -71,6 +71,9 @@
   </article>
 
   {# *********** Start Scan Form *********** #}
+
+  {# Show form to admin only #}
+  {% if role == "ADMIN" %}
   <article class="card">
     <div class="card-head">
       <div>
@@ -111,7 +114,7 @@
     </form>
 
   </article>
-
+{% endif %}
 </section>
 
 {% endblock %}

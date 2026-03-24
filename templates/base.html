@@ -20,14 +20,17 @@
 
       {# Application branding #}
       <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
+        <div class="logo">
+        <img src="/static/logo.png" alt="Riskforge Logo" style="height:40px;">
+        </div>
         <div>
           <div class="brand-name">Riskforge Platform</div>
           <div class="brand-sub">Enterprise Console</div>
         </div>
+        <br>
       </div>
-
       {# Primary navigation links #}
+
       <nav class="nav">
         <div class="nav-section">Manage</div>
         <a class="nav-item" href="/dashboard"><span class="nav-dot"></span>Dashboard</a>
@@ -39,10 +42,17 @@
         <a class="nav-item" href="#"><span class="nav-dot"></span>Reports</a>
 
         <div class="nav-section">Admin</div>
+        {# Only show users button to admin users #}
+        {% if role == "ADMIN" %}
         <a class="nav-item" href="/users"><span class="nav-dot"></span>Users</a>
+        {% endif %}
         <a class="nav-item" href="/logout"><span class="nav-dot"></span>Logout</a>
       </nav>
-
+<div style="padding: 0 16px 12px;">
+  <span class="cell-sub">
+    <i>Currently logged in as user: </i><b>{{ username }}</b>
+  </span>
+</div>
     </aside>
 
     <div class="main">
@@ -51,10 +61,6 @@
       <header class="topbar">
 
         <div class="topbar-left">
-
-          {# Sidebar toggle button (no functionality yet) #}
-          <button class="icon-btn" type="button" aria-label="Open menu">☰</button>
-
           {# Page title and subtitle (defined by child templates) #}
           <div class="page-title">
             <h1>{% block page_h1 %}Dashboard{% endblock %}</h1>
@@ -62,37 +68,6 @@
           </div>
         </div>
 
-        <div class="topbar-right">
-
-          {# Search input (no functionality yet) #}
-          <label class="search">
-            <span class="search-icon" aria-hidden="true">⌕</span>
-            <input type="search" placeholder="Search assets, tickets, CVEs…" />
-          </label>
-
-          {# Quick action button to start a new scan #}
-          <a class="btn btn-primary" href="/scans">New Scan</a>
-
-          {# User session display (username + role from backend) #}
-          <div class="user">
-
-            {# Avatar shows first letter of username or fallback value #}
-            <div class="avatar" aria-hidden="true">
-              {% if username %}
-                {{ username[0] | upper }}
-              {% else %}
-                U
-              {% endif %}
-            </div>
-
-            {# Display authenticated user name and role #}
-            <div class="user-meta">
-              <div class="user-name">{{ username }}</div>
-              <div class="user-role">{{ role }}</div>
-            </div>
-
-          </div>
-        </div>
       </header>
 
       {# *********** Main Content Area *********** #}
@@ -108,12 +83,7 @@
       <footer class="footer">
 
         {# Static footer text #}
-        <span class="cell-sub">© Riskforge Platform • Internal use</span>
-
-        {# Optional last updated value (no functionality yet) #}
-        <span class="cell-sub">
-          Last updated: #
-        </span>
+        <span class="cell-sub">Riskforge Platform - Internal use</span>
 
       </footer>
 

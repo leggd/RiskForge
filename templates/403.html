@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Forbidden{% endblock %}
+{% block page_h1 %}403{% endblock %}
+{% block page_subtitle %}Access denied{% endblock %}
+
+{% block content %}
+
+<article class="card">
+  <div style="padding: 16px;">
+    <h2>Access Denied</h2>
+      {% if error %}
+        <p>{{ error }}</p>
+      {% else %}
+        <p>You do not have permission to access this resource.</p>
+      {% endif %}
+    <div class="row-actions" style="margin-top:12px;">
+      <a class="btn btn-primary" href="/dashboard">Go to Dashboard</a>
+    </div>
+  </div>
+</article>
+
+{% endblock %}

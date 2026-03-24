@@ -87,6 +87,9 @@
     <hr style="margin: 16px 0;">
 
     {# *********** Update Ticket Form *********** #}
+
+    {# Only show form to admin #}
+    {% if role == "ADMIN" %}
     <h3>Update Ticket</h3>
 
     {# Submit updated ticket data to POST route #}
@@ -118,6 +121,7 @@
       <button class="btn btn-primary" type="submit">Save Changes</button>
 
     </form>
+    {% endif %}
   </div>
 </div>
 

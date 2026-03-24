@@ -108,6 +108,8 @@
     </article>
 
     {# *********** Network Discovery *********** #}
+    {# Only show form and network discovery list to admin #}
+    {% if role == "ADMIN" %}
     <article class="card">
       <div class="card-head">
         <div>
@@ -154,6 +156,7 @@
     </article>
 
     {# *********** Add Asset Form *********** #}
+
     <article class="card">
       <div class="card-head">
         <div>
@@ -213,7 +216,7 @@
         </div>
       </form>
     </article>
-
+    {% endif %}
   </section>
 </main>
 

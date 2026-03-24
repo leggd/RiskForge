@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error{% endblock %}
+{% block page_h1 %}500{% endblock %}
+{% block page_subtitle %}Something went wrong{% endblock %}
+
+{% block content %}
+
+<article class="card">
+  <div style="padding: 16px;">
+    <h2>Unexpected Error</h2>
+
+    {% if error %}
+      <p>{{ error }}</p>
+    {% else %}
+      <p>An unexpected error occurred. Please try again later.</p>
+    {% endif %}
+
+    <div class="row-actions" style="margin-top:12px;">
+      <a class="btn btn-primary" href="/dashboard">Go to Dashboard</a>
+    </div>
+  </div>
+</article>
+
+{% endblock %}

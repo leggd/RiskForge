@@ -17,7 +17,7 @@
     <div class="card-actions">
 
       {# Show retire button if user is active #}
-{% if not user.retired and user.user_id != session["user_id"] %}
+{% if role == "ADMIN" and user.user_id != session["user_id"] %}
   <form method="POST"
         action="/users/{{ user.user_id }}/retire"
         style="margin:0;">

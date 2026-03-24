@@ -7,7 +7,6 @@
 {% block content %}
 
 {# *********** KPI Summary Cards *********** #}
-{# Display platform metrics from metrics dictionary passed to render_template() #}
 <section class="grid kpis" style="margin-bottom: 14px;">
 
   <article class="card kpi">
@@ -25,7 +24,9 @@
       <span class="kpi-label">Total Scans</span>
     </div>
     <div class="kpi-value">{{ metrics.total_scans }}</div>
-    <div class="kpi-sub">{{ metrics.active_scans }} in progress</div>
+    <div class="kpi-sub">
+      {{ metrics.active_scans }} running · {{ metrics.completed_scans }} done
+    </div>
   </article>
 
   <article class="card kpi">
@@ -43,23 +44,130 @@
       <span class="kpi-label">Open Tickets</span>
     </div>
     <div class="kpi-value">{{ metrics.open_tickets }}</div>
-    <div class="kpi-sub">{{ metrics.in_progress_tickets }} in progress</div>
+    <div class="kpi-sub">
+      {{ metrics.in_progress_tickets }} in progress
+    </div>
   </article>
 
 </section>
 
-{# *********** Ticket Priority Breakdown *********** #}
-{# Displays open tickets count by priority level #}
-<section style="max-width: 300px;">
 
+<section style="display:grid; grid-template-columns: 0.5fr 1fr 0.5fr; gap:14px;">
+<article class="card" style="height:100%;">
+  <div class="card-head">
+    <div>
+      <h2>System Health</h2>
+      <p>Core service availability</p>
+    </div>
+  </div>
+
+  <div style="padding: 0 16px 16px;">
+    <table class="table">
+      <tbody>
+        <tr>
+          <td>GVM Scanner</td>
+          <td style="text-align:right;">
+            {% if gvm_status %}
+              <span class="badge badge-low">Online</span>
+            {% else %}
+              <span class="badge badge-critical">Offline</span>
+            {% endif %}
+          </td>
+        </tr>
+
+        <tr>
+          <td>AI Scanner</td>
+          <td style="text-align:right;">
+            {% if ai_status %}
+              <span class="badge badge-low">Online</span>
+            {% else %}
+              <span class="badge badge-critical">Offline</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td>Web Server</td>
+          <td style="text-align:right;">
+            {% if web_status %}
+              <span class="badge badge-low">Online</span>
+            {% else %}
+              <span class="badge badge-critical">Offline</span>
+            {% endif %}
+          </td>
+        </tr>
+
+        <tr>
+          <td>Database</td>
+          <td style="text-align:right;">
+            {% if db_status %}
+              <span class="badge badge-low">Online</span>
+            {% else %}
+              <span class="badge badge-critical">Offline</span>
+            {% endif %}
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+</article>
+
+  {# *********** Most Affected Assets (NOW MAIN) *********** #}
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h2>Most Affected Assets</h2>
+        <p>Assets with highest risk exposure</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Findings</th>
+            <th>Max Score</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          {% for asset in top_assets %}
+          <tr>
+            <td>{{ asset.name }}</td>
+            <td>{{ asset.finding_count }}</td>
+            <td>
+              {% if asset.max_score >= 9 %}
+                <span class="badge badge-critical">{{ asset.max_score }}</span>
+              {% elif asset.max_score >= 7 %}
+                <span class="badge badge-high">{{ asset.max_score }}</span>
+              {% else %}
+                {{ asset.max_score }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+
+          {% if top_assets|length == 0 %}
+          <tr>
+            <td colspan="3" style="text-align:center;">
+              No data available
+            </td>
+          </tr>
+          {% endif %}
+
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  {# *********** Ticket Breakdown (NOW COMPACT) *********** #}
   <article class="card">
     <div class="card-head">
       <div>
         <h2>Ticket Breakdown</h2>
         <p>Open tickets by priority</p>
       </div>
-
-      {# Button link to full tickets page for full detailed view #}
       <a class="btn btn-ghost" href="/tickets">View all</a>
     </div>
 
@@ -67,21 +175,23 @@
       <table class="table">
         <tbody>
 
-          {# Each row ticket count for a specific priority #}
           <tr>
-            <td>Critical</td>
+            <td><span class="badge badge-critical">Critical</span></td>
             <td>{{ metrics.critical_tickets }}</td>
           </tr>
+
           <tr>
-            <td>High</td>
+            <td><span class="badge badge-high">High</span></td>
             <td>{{ metrics.high_tickets }}</td>
           </tr>
+
           <tr>
-            <td>Medium</td>
+            <td><span class="badge badge-med">Medium</span></td>
             <td>{{ metrics.medium_tickets }}</td>
           </tr>
+
           <tr>
-            <td>Low</td>
+            <td><span class="badge badge-low">Low</span></td>
             <td>{{ metrics.low_tickets }}</td>
           </tr>
 
@@ -90,6 +200,65 @@
     </div>
   </article>
 
+</section>
+
+
+{# *********** Recent Scans *********** #}
+<section style="margin-top: 14px;">
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h2>Recent Scans</h2>
+        <p>Latest scan activity</p>
+      </div>
+      <a class="btn btn-ghost" href="/scans">View all</a>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Started</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          {% for scan in recent_scans %}
+          <tr>
+            <td>{{ scan.asset_name }}</td>
+
+            <td>
+              {% if scan.status == "Done" %}
+                <span class="badge badge-low">Done</span>
+              {% elif scan.status == "Running" %}
+                <span class="badge badge-high">Running</span>
+              {% elif scan.status == "Failed" %}
+                <span class="badge badge-critical">Failed</span>
+              {% else %}
+                {{ scan.status }}
+              {% endif %}
+            </td>
+
+            <td>{{ scan.progress }}%</td>
+            <td>{{ scan.started_at }}</td>
+          </tr>
+          {% endfor %}
+
+          {% if recent_scans|length == 0 %}
+          <tr>
+            <td colspan="4" style="text-align:center;">
+              No scans yet.
+            </td>
+          </tr>
+          {% endif %}
+
+        </tbody>
+      </table>
+    </div>
+  </article>
 </section>
 
 {% endblock %}

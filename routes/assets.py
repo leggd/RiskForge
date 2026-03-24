@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, request, redirect, session
+from flask import Blueprint, render_template, request, redirect, session, abort
 from db import execute_query
 from pymysql.err import IntegrityError
 from services.audit_service import log_event
+from services.auth_utils import require_role
 from services.scanner_service import run_ping_sweep, run_os_detection
 import ipaddress
 
@@ -72,10 +73,14 @@ def add_asset():
     Validates user input, checks for duplicate assets, inserts the record
     into the database and logs the creation event.
     """
-
+    
     # Ensure user is authenticated via session cookie
     if "user_id" not in session:
         return redirect("/login")
+    
+    # RBAC for asset creation
+    if not require_role("ADMIN"):
+        abort(403, description="Only admins can create assets")
 
     # UI message placeholder
     error = None
@@ -177,7 +182,7 @@ def asset_detail(asset_id):
 
         # Return 404 if asset does not exist
         if asset is None:
-            return "Asset not found", 404
+            abort(404)
 
         # Render asset detail page with optional edit mode
         return render_template(
@@ -188,7 +193,7 @@ def asset_detail(asset_id):
             role=session["role"])
 
     except Exception as e:
-        return "Error loading asset: " + str(e)
+        abort(500, description="Failed to load asset")
 
 @assets_bp.route("/assets/<int:asset_id>/update", methods=["POST"])
 def update_asset(asset_id):
@@ -202,6 +207,10 @@ def update_asset(asset_id):
     # Ensure user is authenticated via session cookie
     if "user_id" not in session:
         return redirect("/login")
+    
+    # RBAC for asset updating
+    if not require_role("ADMIN"):
+        abort(403, description="Only admins can edit assets")
 
     # Retrieve form input
     name = request.form.get("name", "").strip()
@@ -277,6 +286,9 @@ def retire_asset(asset_id):
     if "user_id" not in session:
         return redirect("/login")
     
+    # RBAC for retiring assets
+    if not require_role("ADMIN"):
+        abort(403, description="Only admins can retire assets")
     try:
         # Mark asset as retired (soft delete)
         sql = """
