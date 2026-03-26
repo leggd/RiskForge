@@ -2,13 +2,16 @@ from gvm.connections import TLSConnection
 from gvm.protocols.gmp import GMP
 from gvm.transforms import EtreeCheckCommandTransform
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # GVM connection configuration (scanner host and credentials)
-# Will change to .env at production
-HOST = "10.0.96.32"
-PORT = 9390
-USERNAME = "admin"
-PASSWORD = "378d6918-4340-4cfe-95f7-3f084d826d5d"
+GVM_HOST = os.getenv("SCANNER_HOST")
+GVM_PORT = os.getenv("GVM_PORT")
+GVM_USERNAME = os.getenv("GVM_USERNAME")
+GVM_PASSWORD = os.getenv("GVM_PASSWORD")
 
 def start_gvm_scan(target_ip):
     """
@@ -24,13 +27,13 @@ def start_gvm_scan(target_ip):
     SCANNER_ID     = "08b69003-5fc2-4037-a479-93b440211c73"
 
     # Establish TLS connection to GVM
-    connection = TLSConnection(hostname=HOST, port=PORT)
+    connection = TLSConnection(hostname=GVM_HOST, port=GVM_PORT)
     transform = EtreeCheckCommandTransform()
 
     # Open GVM session
     with GMP(connection=connection, transform=transform) as gmp:
         # Authenticate with GVM
-        gmp.authenticate(USERNAME, PASSWORD)
+        gmp.authenticate(GVM_USERNAME, GVM_PASSWORD)
 
         # Generate timestamp to ensure unique target/task names
         now = str(datetime.utcnow())
@@ -78,13 +81,13 @@ def get_gvm_task_status(task_id):
     """
 
     # Establish TLS connection to GVM
-    connection = TLSConnection(hostname=HOST, port=PORT)
+    connection = TLSConnection(hostname=GVM_HOST, port=GVM_PORT)
     transform = EtreeCheckCommandTransform()
 
     # Open GVM session
     with GMP(connection=connection, transform=transform) as gmp:
         # Authenticate with GVM
-        gmp.authenticate(USERNAME, PASSWORD)
+        gmp.authenticate(GVM_USERNAME, GVM_PASSWORD)
 
         # Retrieve list of tasks and locate the requested task
         tasks_xml = gmp.get_tasks(filter_string="rows=500")
@@ -123,12 +126,12 @@ def get_gvm_findings(report_id, limit=200):
     """
         
     # Establish TLS connection to GVM
-    connection = TLSConnection(hostname=HOST, port=PORT)
+    connection = TLSConnection(hostname=GVM_HOST, port=GVM_PORT)
     transform = EtreeCheckCommandTransform()
 
     # Open GVM session and authenticate
     with GMP(connection=connection, transform=transform) as gmp:
-        gmp.authenticate(USERNAME, PASSWORD)
+        gmp.authenticate(GVM_USERNAME, GVM_PASSWORD)
 
         # Retrieve full report with detailed results
         report_xml = gmp.get_report(

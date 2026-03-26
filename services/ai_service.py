@@ -1,9 +1,13 @@
 import requests
 import urllib3
+import os
+from dotenv import load_dotenv
 
-# Groq LLM model used for AI vulnerability analysis
-GROQ_API_KEY = ""
+load_dotenv()
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_MODEL   = "llama-3.1-8b-instant"
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Sends a single prompt to Groq API and returns the text response

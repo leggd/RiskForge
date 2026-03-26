@@ -3,12 +3,14 @@ import json
 from db import execute_query
 from services.findings_service import store_findings, prioritise_findings
 from services.ticket_service import create_tickets
+import os
+from dotenv import load_dotenv
 
-# Will change to .env at production
-KALI_HOST = "10.0.96.32"
-KALI_USER = "kali"
-KALI_PASS = "kali"
-REMOTE_SCRIPT = "/home/kali/remote_test/scanner.py"
+load_dotenv()
+KALI_HOST = os.getenv("SCANNER_HOST")
+KALI_USER = os.getenv("KALI_USER")
+KALI_PASS = os.getenv("KALI_PASS")
+REMOTE_SCRIPT = os.getenv("REMOTE_SCRIPT")
 
 def run_terminal(command):
     """
