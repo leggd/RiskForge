@@ -23,8 +23,7 @@
 
   {# Show action buttons only when not in edit mode to admin only #}
 
-  {% if role == "ADMIN" %}
-    {% if not edit_mode %}
+  {% if role == "ADMIN" and not edit_mode %}
       <div class="card-actions">
 
         {# Enable edit mode via parameter ?edit=1 #}
@@ -47,7 +46,6 @@
           {# Display retired status if asset is already retired #}
           <span class="pill">Retired</span>
         {% endif %}
-      {% endif %}
     </div>
   {% endif %}
 </div>

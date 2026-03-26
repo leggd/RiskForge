@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 23, 2026 at 02:31 PM
+-- Generation Time: Mar 26, 2026 at 11:55 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -112,7 +112,9 @@ CREATE TABLE `tickets` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `closed_reason` text DEFAULT NULL,
   `closed_at` datetime DEFAULT NULL,
-  `riskforge_score` float DEFAULT NULL
+  `riskforge_score` float DEFAULT NULL,
+  `ai_summary` text DEFAULT NULL,
+  `ai_generated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -129,13 +131,6 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `retired` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `created_at`, `retired`) VALUES
-(1, 'admin', '$2b$12$6aC7CRtpFJd294Hd.GD/LOcT5jQe2yjMlcucUmIQhba/C43GFlCfO', 'ADMIN', '2026-03-03 21:44:49', 0);
 
 --
 -- Indexes for dumped tables
@@ -225,7 +220,7 @@ ALTER TABLE `tickets`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables

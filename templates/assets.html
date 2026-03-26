@@ -8,14 +8,14 @@
 
 {% block content %}
 
-{# Display error message passed to render_template() #}
+{# Display error message passed from back end #}
 {% if error %}
 <div class="card" style="margin-bottom:20px; color:#ff6b6b;">
   {{ error }}
 </div>
 {% endif %}
 
-{# Display success message passed to render_template() #}
+{# Display success message passed from back end #}
 {% if success %}
 <div class="card" style="margin-bottom:20px; color:#4ade80;">
   {{ success }}
@@ -59,7 +59,7 @@
           </thead>
           <tbody>
 
-            {# Loop through assets list passed to render_templater() ordered by created_at #}
+            {# Loop through assets list passed from back end ordered by created_at descending #}
             {% for asset in assets %}
             <tr>
               <td>

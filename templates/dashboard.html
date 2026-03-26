@@ -15,7 +15,7 @@
     </div>
     <div class="kpi-value">{{ metrics.total_assets }}</div>
     <div class="kpi-sub">
-      {{ metrics.active_assets }} active · {{ metrics.retired_assets }} retired
+      {{ metrics.active_assets }} active - {{ metrics.retired_assets }} retired
     </div>
   </article>
 
@@ -25,7 +25,7 @@
     </div>
     <div class="kpi-value">{{ metrics.total_scans }}</div>
     <div class="kpi-sub">
-      {{ metrics.active_scans }} running · {{ metrics.completed_scans }} done
+      {{ metrics.active_scans }} running - {{ metrics.completed_scans }} done
     </div>
   </article>
 
@@ -35,7 +35,7 @@
     </div>
     <div class="kpi-value">{{ metrics.total_findings }}</div>
     <div class="kpi-sub">
-      {{ metrics.critical_findings }} critical · {{ metrics.high_findings }} high
+      {{ metrics.critical_findings }} critical - {{ metrics.high_findings }} high
     </div>
   </article>
 
@@ -52,67 +52,73 @@
 </section>
 
 
+{# *********** Main Dashboard Grid *********** #}
 <section style="display:grid; grid-template-columns: 0.5fr 1fr 0.5fr; gap:14px;">
-<article class="card" style="height:100%;">
-  <div class="card-head">
-    <div>
-      <h2>System Health</h2>
-      <p>Core service availability</p>
+
+  {# *********** System Health *********** #}
+  <article class="card" style="height:100%;">
+    <div class="card-head">
+      <div>
+        <h2>System Health</h2>
+        <p>Core service availability</p>
+      </div>
     </div>
-  </div>
 
-  <div style="padding: 0 16px 16px;">
-    <table class="table">
-      <tbody>
-        <tr>
-          <td>GVM Scanner</td>
-          <td style="text-align:right;">
-            {% if gvm_status %}
-              <span class="badge badge-low">Online</span>
-            {% else %}
-              <span class="badge badge-critical">Offline</span>
-            {% endif %}
-          </td>
-        </tr>
+    <div style="padding: 0 16px 16px;">
+      <table class="table">
+        <tbody>
 
-        <tr>
-          <td>AI Scanner</td>
-          <td style="text-align:right;">
-            {% if ai_status %}
-              <span class="badge badge-low">Online</span>
-            {% else %}
-              <span class="badge badge-critical">Offline</span>
-            {% endif %}
-          </td>
-        </tr>
-        <tr>
-          <td>Web Server</td>
-          <td style="text-align:right;">
-            {% if web_status %}
-              <span class="badge badge-low">Online</span>
-            {% else %}
-              <span class="badge badge-critical">Offline</span>
-            {% endif %}
-          </td>
-        </tr>
+          <tr>
+            <td>GVM Scanner</td>
+            <td style="text-align:right;">
+              {% if gvm_status %}
+                <span class="badge badge-low">Online</span>
+              {% else %}
+                <span class="badge badge-critical">Offline</span>
+              {% endif %}
+            </td>
+          </tr>
 
-        <tr>
-          <td>Database</td>
-          <td style="text-align:right;">
-            {% if db_status %}
-              <span class="badge badge-low">Online</span>
-            {% else %}
-              <span class="badge badge-critical">Offline</span>
-            {% endif %}
-          </td>
-        </tr>
+          <tr>
+            <td>AI Scanner</td>
+            <td style="text-align:right;">
+              {% if ai_status %}
+                <span class="badge badge-low">Online</span>
+              {% else %}
+                <span class="badge badge-critical">Offline</span>
+              {% endif %}
+            </td>
+          </tr>
 
-      </tbody>
-    </table>
-  </div>
-</article>
+          <tr>
+            <td>Web Server</td>
+            <td style="text-align:right;">
+              {% if web_status %}
+                <span class="badge badge-low">Online</span>
+              {% else %}
+                <span class="badge badge-critical">Offline</span>
+              {% endif %}
+            </td>
+          </tr>
 
-  {# *********** Most Affected Assets (NOW MAIN) *********** #}
+          <tr>
+            <td>Database</td>
+            <td style="text-align:right;">
+              {% if db_status %}
+                <span class="badge badge-low">Online</span>
+              {% else %}
+                <span class="badge badge-critical">Offline</span>
+              {% endif %}
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+
+  {# *********** Most Affected Assets *********** #}
   <article class="card">
     <div class="card-head">
       <div>
@@ -161,7 +167,8 @@
     </div>
   </article>
 
-  {# *********** Ticket Breakdown (NOW COMPACT) *********** #}
+
+  {# *********** Ticket Breakdown *********** #}
   <article class="card">
     <div class="card-head">
       <div>

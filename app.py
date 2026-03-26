@@ -31,14 +31,17 @@ app.register_blueprint(tickets_bp)
 # Register users routes (list, add)
 app.register_blueprint(users_bp)
 
+# Register 403 error page route
 @app.errorhandler(403)
 def forbidden(error):
     return render_template("403.html", error=error.description), 403
 
+# Register 404 error page route
 @app.errorhandler(404)
 def not_found(error):
     return render_template("404.html"), 404
 
+# Register 500 error page route
 @app.errorhandler(500)
 def server_error(e):
     return render_template("500.html", error=e.description), 500
@@ -48,4 +51,4 @@ if __name__ == "__main__":
     start_worker()
 
     # Run Flask application
-    app.run(debug=False)
+    app.run(app.run(host="0.0.0.0", port=5000, debug=True))

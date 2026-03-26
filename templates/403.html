@@ -9,6 +9,7 @@
 <article class="card">
   <div style="padding: 16px;">
     <h2>Access Denied</h2>
+    {# Show error messaged passed from back end if available #}
       {% if error %}
         <p>{{ error }}</p>
       {% else %}

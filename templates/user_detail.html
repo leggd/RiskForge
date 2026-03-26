@@ -6,46 +6,54 @@
 
 {% block content %}
 
+{# *********** User Overview *********** #}
 <article class="card">
   <div class="card-head">
     <div>
-      {# Display username #}
       <h2>{{ user.username }}</h2>
       <p>User ID: {{ user.user_id }}</p>
     </div>
 
+    {# *********** User Actions *********** #}
     <div class="card-actions">
 
-      {# Show retire button if user is active #}
-{% if role == "ADMIN" and user.user_id != session["user_id"] %}
-  <form method="POST"
-        action="/users/{{ user.user_id }}/retire"
-        style="margin:0;">
-    <button class="btn btn-ghost"
-            type="submit"
-            onclick="return confirm('Retire this user?');">
-      Retire
-    </button>
-  </form>
-{% elif user.user_id == session["user_id"] %}
-  <span class="pill">Current User</span>
-{% else %}
-  <span class="pill">Retired</span>
-{% endif %}
+      {# Admin can retire other active users but not themselves #}
+      {% if role == "ADMIN" and not user.retired and user.user_id != session["user_id"] %}
+        <form method="POST"
+              action="/users/{{ user.user_id }}/retire"
+              style="margin:0;">
+          <button class="btn btn-ghost"
+                  type="submit"
+                  onclick="return confirm('Retire this user?');">
+            Retire
+          </button>
+        </form>
+
+      {# Current logged in user indicator #}
+      {% elif user.user_id == session["user_id"] %}
+        <span class="pill">Current User</span>
+
+      {# Retired user indicator #}
+      {% elif user.retired %}
+        <span class="pill">Retired</span>
+
+      {% endif %}
 
     </div>
   </div>
 
+
+  {# *********** User Details *********** #}
   <div style="padding: 0 16px 16px;">
 
-    {# Display user details #}
     <p><b>Username:</b> {{ user.username }}</p>
     <p><b>Role:</b> {{ user.role }}</p>
-    <p><b>Status:</b> 
+
+    <p><b>Status:</b>
       {% if user.retired %}
-        Retired
+        <span class="pill">Retired</span>
       {% else %}
-        Active
+        <span class="pill pill-open">Active</span>
       {% endif %}
     </p>
 

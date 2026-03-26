@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, session, abort
 from db import execute_query
 from services.audit_service import log_event
 from services.auth_utils import require_role
+from services.ai_service import generate_ai
 
 tickets_bp = Blueprint("tickets", __name__)
 
@@ -214,3 +215,40 @@ def update_ticket(ticket_id):
     # Handle unexpected errors during update
     except Exception as e:
         return "Error updating ticket: " + str(e)
+
+@tickets_bp.route("/tickets/<int:ticket_id>/ai", methods=["POST"])
+def generate_ticket_ai(ticket_id):
+    """
+    Generate AI analysis for a ticket and store the result
+    """
+
+    # Ensure user is authenticated via session cookie
+    if "user_id" not in session:
+        return redirect("/login")
+    
+    # RBAC for ai generation
+    if not require_role("ADMIN"):
+        abort(403, description="Only admins can generate AI summaries")
+
+    # Get ticket from DB
+    sql = "SELECT * FROM tickets WHERE ticket_id = %s"
+    ticket = execute_query(sql, (ticket_id), "one")
+
+    if not ticket:
+        abort(404)
+
+    # Run AI using description
+    description = ticket.get("description", "")
+    ai_output = generate_ai(description)
+
+    # Save result to DB
+    sql = """
+    UPDATE tickets
+    SET ai_summary = %s,
+    ai_generated_at = NOW()
+    WHERE ticket_id = %s
+    """
+    execute_query(sql, (ai_output, ticket_id))
+
+    # Go back to specific ticket detail page
+    return redirect(f"/tickets/{ticket_id}")

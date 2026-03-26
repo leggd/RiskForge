@@ -5,3 +5,4 @@ bcrypt
 cryptography
 python-gvm
 lxml
+requests
