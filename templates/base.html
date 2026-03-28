@@ -50,7 +50,9 @@
       </nav>
 <div style="padding: 0 16px 12px;">
   <span class="cell-sub">
-    <i>Currently logged in as {{ role.lower() }}: </i><b>{{ username }}</b>
+    {% if session.get("username") and session.get("role") %}
+      <i>Currently logged in as {{ session.get("role").lower() }}: </i><b>{{ session.get("username") }}</b>
+    {% endif %}
   </span>
 </div>
     </aside>
