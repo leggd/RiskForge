@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 26, 2026 at 11:55 AM
+-- Generation Time: Mar 28, 2026 at 10:40 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -169,7 +169,24 @@ INSERT INTO `audit_log` (`audit_id`, `user_id`, `action`, `entity_type`, `entity
 (104, 1, 'LOGIN_SUCCESS', 'USER', NULL, 'User: admin logged in successfully.', '10.96.168.196', '2026-03-25 15:36:45'),
 (105, 7, 'LOGIN_SUCCESS', 'USER', NULL, 'User: moored logged in successfully.', '10.102.103.15', '2026-03-25 15:42:17'),
 (106, 1, 'LOGOUT', 'USER', 1, 'User admin logged out.', '127.0.0.1', '2026-03-26 10:19:40'),
-(107, 7, 'LOGIN_SUCCESS', 'USER', NULL, 'User: moored logged in successfully.', '127.0.0.1', '2026-03-26 10:19:46');
+(107, 7, 'LOGIN_SUCCESS', 'USER', NULL, 'User: moored logged in successfully.', '127.0.0.1', '2026-03-26 10:19:46'),
+(108, 7, 'LOGOUT', 'USER', 7, 'User moored logged out.', '127.0.0.1', '2026-03-26 11:27:02'),
+(109, 4, 'LOGIN_SUCCESS', 'USER', NULL, 'User: leggd logged in successfully.', '127.0.0.1', '2026-03-26 11:27:06'),
+(110, 1, 'LOGIN_SUCCESS', 'USER', NULL, 'User: admin logged in successfully.', '152.105.243.197', '2026-03-26 11:28:16'),
+(111, 1, 'LOGIN_SUCCESS', 'USER', NULL, 'User: admin logged in successfully.', '152.105.118.14', '2026-03-26 13:01:34'),
+(112, 4, 'LOGOUT', 'USER', 4, 'User leggd logged out.', '127.0.0.1', '2026-03-26 22:53:21'),
+(113, 4, 'LOGIN_SUCCESS', 'USER', NULL, 'User: leggd logged in successfully.', '127.0.0.1', '2026-03-26 22:53:31'),
+(114, 4, 'TICKET_STATUS_CHANGE', 'TICKET', 96, 'Ticket status changed from Closed to Open', '127.0.0.1', '2026-03-26 22:56:14'),
+(115, 4, 'LOGOUT', 'USER', 4, 'User leggd logged out.', '127.0.0.1', '2026-03-26 22:56:42'),
+(116, 1, 'LOGIN_FAILED', 'USER', NULL, 'User: admin attempted login with incorrect password.', '127.0.0.1', '2026-03-28 09:22:49'),
+(117, 1, 'LOGIN_FAILED', 'USER', NULL, 'User: admin attempted login with incorrect password.', '127.0.0.1', '2026-03-28 09:22:53'),
+(118, 1, 'LOGIN_FAILED', 'USER', NULL, 'User: admin attempted login with incorrect password.', '127.0.0.1', '2026-03-28 09:22:58'),
+(119, 1, 'LOGIN_FAILED', 'USER', NULL, 'User: admin attempted login with incorrect password.', '127.0.0.1', '2026-03-28 09:23:02'),
+(120, 1, 'LOGIN_FAILED', 'USER', NULL, 'User: admin attempted login with incorrect password.', '127.0.0.1', '2026-03-28 09:23:05'),
+(121, 4, 'LOGIN_SUCCESS', 'USER', NULL, 'User: leggd logged in successfully.', '127.0.0.1', '2026-03-28 09:24:37'),
+(122, 4, 'LOGOUT', 'USER', 4, 'User leggd logged out.', '127.0.0.1', '2026-03-28 09:24:58'),
+(123, 4, 'LOGIN_FAILED', 'USER', NULL, 'User: leggd attempted login with incorrect password.', '127.0.0.1', '2026-03-28 09:32:35'),
+(124, 4, 'LOGIN_SUCCESS', 'USER', NULL, 'User: leggd logged in successfully.', '127.0.0.1', '2026-03-28 09:39:29');
 
 -- --------------------------------------------------------
 
@@ -981,11 +998,11 @@ INSERT INTO `tickets` (`ticket_id`, `asset_id`, `scan_id`, `created_by`, `title`
 (93, 1, 9, 1, 'FTP Brute Force Logins With Default Credentials Reporting', 'Source: Scan #9\nAsset ID: 1\nPort: 2121/tcp\nCVSS: 7.5\nRiskForge Score: 6.8\nCVEs: CVE-1999-0501, CVE-1999-0502, CVE-1999-0507, CVE-1999-0508, CVE-2001-1594, CVE-2013-7404, CVE-2014-9198, CVE-2015-7261, CVE-2016-8731, CVE-2017-8218, CVE-2018-9068, CVE-2018-17771, CVE-2018-19063, CVE-2018-19064\n\nSolution:\nChange the password as soon as possible.', 'Open', 'Medium', '2026-03-23 13:47:12', NULL, NULL, 6.8, NULL, NULL),
 (94, 1, 9, 1, 'Java RMI Server Insecure Default Configuration RCE Vulnerability - Active Check', 'Source: Scan #9\nAsset ID: 1\nPort: 1099/tcp\nCVSS: 7.5\nRiskForge Score: 6.8\nCVEs: CVE-2011-3556\n\nSolution:\nDisable class-loading. Please contact the vendor of the\n  affected system for additional guidance.', 'Open', 'Medium', '2026-03-23 13:47:12', NULL, NULL, 6.8, NULL, NULL),
 (95, 1, 9, 1, 'rsh Unencrypted Cleartext Login', 'Source: Scan #9\nAsset ID: 1\nPort: 514/tcp\nCVSS: 7.5\nRiskForge Score: 6.8\nCVEs: CVE-1999-0651\n\nSolution:\nDisable the rsh service and use alternatives like SSH\n  instead.', 'Open', 'Medium', '2026-03-23 13:47:12', NULL, NULL, 6.8, NULL, NULL),
-(96, 3, 11, 1, 'Elasticsearch End of Life (EOL) Detection', 'Source: Scan #11\nAsset ID: 3\nPort: 9200/tcp\nCVSS: 10.0\nRiskForge Score: 10\nCVEs: None\n\nSolution:\nUpdate Elasticsearch to a version that still receives technical support and updates.', 'Closed', 'Critical', '2026-03-23 14:30:27', 'done', '2026-03-23 22:13:50', 10, NULL, NULL),
+(96, 3, 11, 1, 'Elasticsearch End of Life (EOL) Detection', 'Source: Scan #11\nAsset ID: 3\nPort: 9200/tcp\nCVSS: 10.0\nRiskForge Score: 10\nCVEs: None\n\nSolution:\nUpdate Elasticsearch to a version that still receives technical support and updates.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
 (97, 3, 11, 1, 'Microsoft HTTP.sys RCE Vulnerability (MS15-034) - Active Check', 'Source: Scan #11\nAsset ID: 3\nPort: 80/tcp\nCVSS: 10.0\nRiskForge Score: 10\nCVEs: CVE-2015-1635\n\nSolution:\nThe vendor has released updates. Please see the references for more information.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
 (98, 3, 11, 1, 'Elasticsearch < 1.6.1 Multiple Vulnerabilities - Windows', 'Source: Scan #11\nAsset ID: 3\nPort: 9200/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2015-5531, CVE-2015-5377\n\nSolution:\nUpdate to Elasticsearch version 1.6.1,\n  or later.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
 (99, 3, 11, 1, 'Microsoft Windows Remote Desktop Services RCE Vulnerability (CVE-2019-0708, BlueKeep) - Active Check', 'Source: Scan #11\nAsset ID: 3\nPort: 3389/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2019-0708\n\nSolution:\nThe vendor has released updates. Please see the references for\n  more information.\n\n  As a workaround enable Network Level Authentication (NLA) on systems running supported editions of\n  Windows 7, Windows Server 2008, and Windows Server 2008 R2.\n\n  NOTE: After enabling NLA affected systems are still vulnerable to Remote Code Execution (RCE)\n  exploitation if the attacker has valid credentials that can be used to successfully\n  authenticate.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
-(100, 3, 11, 1, 'MySQL / MariaDB Default Credentials (MySQL Protocol)', 'Source: Scan #11\nAsset ID: 3\nPort: 3306/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2001-0645, CVE-2002-1809, CVE-2004-1532, CVE-2004-2357, CVE-2006-1451, CVE-2007-2554, CVE-2007-6081, CVE-2009-0919, CVE-2014-3419, CVE-2015-4669, CVE-2016-6531, CVE-2018-15719, CVE-2024-22901\n\nSolution:\n- Change the password as soon as possible\n\n  - Contact the vendor for other possible fixes / updates', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, '### Explanation\nThe vulnerability report indicates that the MySQL database server (running on port 3306/tcp) has multiple known vulnerabilities. These vulnerabilities allow an attacker to potentially gain unauthorized access to the database, execute malicious code, or disrupt the database\'s functionality.\n\n### Risk\nAn attacker could realistically:\n\n- Gain access to sensitive data stored in the database\n- Execute malicious SQL code to delete or modify data\n- Disrupt the database\'s functionality, causing downtime or data loss\n- Escalate privileges to gain control over the underlying system\n\n### Remediation Steps\n\n**Step 1: Change the password**\n- Log in to the MySQL server as an administrator (e.g., using the `mysql` command-line tool or a GUI client like phpMyAdmin)\n- Run the command `ALTER USER \'root\'@\'localhost\' IDENTIFIED BY \'new_password\';` (replace `\'new_password\'` with a strong, unique password)\n- Verify the password change by running `SELECT PASSWORD(\'new_password\');`\n\n**Step 2: Contact the vendor for updates**\n- Reach out to the MySQL vendor (e.g., Oracle) to inquire about available patches or updates for the affected version\n- Request guidance on applying the updates to your specific environment\n- Schedule a maintenance window to apply the updates and ensure minimal disruption to your services\n\n**Step 3: Apply updates and patches**\n- Follow the vendor\'s instructions to download and apply the necessary updates and patches\n- Verify the update process by checking the MySQL version and patch levels\n- Test the database\'s functionality to ensure the updates did not introduce any issues\n\n**Step 4: Monitor and review**\n- Continuously monitor the database\'s security and performance\n- Review the vulnerability report and update your security posture accordingly\n- Schedule regular security audits to identify and address potential vulnerabilities.', '2026-03-26 10:08:20'),
+(100, 3, 11, 1, 'MySQL / MariaDB Default Credentials (MySQL Protocol)', 'Source: Scan #11\nAsset ID: 3\nPort: 3306/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2001-0645, CVE-2002-1809, CVE-2004-1532, CVE-2004-2357, CVE-2006-1451, CVE-2007-2554, CVE-2007-6081, CVE-2009-0919, CVE-2014-3419, CVE-2015-4669, CVE-2016-6531, CVE-2018-15719, CVE-2024-22901\n\nSolution:\n- Change the password as soon as possible\n\n  - Contact the vendor for other possible fixes / updates', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
 (101, 3, 11, 1, 'OpenSSH < 7.2 X11 Forwarding Security Bypass Vulnerability - Windows', 'Source: Scan #11\nAsset ID: 3\nPort: 22/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2016-1908\n\nSolution:\nUpdate to version 7.2 or later.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
 (102, 3, 11, 1, 'Oracle Mysql Security Update (cpuoct2018 - 02) - Windows', 'Source: Scan #11\nAsset ID: 3\nPort: 3306/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2018-3133, CVE-2018-3174, CVE-2018-3282, CVE-2016-9843, CVE-2016-9840, CVE-2016-9841, CVE-2016-9842\n\nSolution:\nThe vendor has released updates. Please see the references for\n  more information.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
 (103, 3, 11, 1, 'Oracle MySQL Server <= 5.5.52 / 5.6 <= 5.6.33 / 5.7 <= 5.7.15 Security Update (cpuoct2016) - Windows', 'Source: Scan #11\nAsset ID: 3\nPort: 3306/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2016-5584, CVE-2016-6662, CVE-2016-7440\n\nSolution:\nUpdates are available. Please see the references for more information.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
@@ -993,7 +1010,7 @@ INSERT INTO `tickets` (`ticket_id`, `asset_id`, `scan_id`, `created_by`, `title`
 (105, 3, 11, 1, 'Oracle MySQL Server <= 5.7.40, 8.x <= 8.0.31 Security Update (cpujan2023) - Windows', 'Source: Scan #11\nAsset ID: 3\nPort: 3306/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2022-32221, CVE-2022-35260, CVE-2022-42915, CVE-2022-42916\n\nSolution:\nUpdate to version 5.7.41, 8.0.32 or later.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
 (106, 3, 11, 1, 'Oracle MySQL Server <= 5.7.41, 8.x <= 8.0.31 Security Update (cpuapr2023) - Windows', 'Source: Scan #11\nAsset ID: 3\nPort: 3306/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2022-37434\n\nSolution:\nUpdate to version 5.7.42, 8.0.32 or later.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
 (107, 3, 11, 1, 'Oracle MySQL Server <= 5.7.43, 8.x <= 8.0.34, 8.1.0 Security Update (cpuoct2023) - Windows', 'Source: Scan #11\nAsset ID: 3\nPort: 3306/tcp\nCVSS: 9.8\nRiskForge Score: 10\nCVEs: CVE-2023-38545, CVE-2023-22084, CVE-2023-38546\n\nSolution:\nUpdate to version 5.7.44, 8.0.35, 8.1.1 or later.', 'Open', 'Critical', '2026-03-23 14:30:27', NULL, NULL, 10, NULL, NULL),
-(108, 2, 10, 1, 'Operating System (OS) End of Life (EOL) Detection', 'Source: Scan #10\nAsset ID: 2\nPort: general/tcp\nCVSS: 10.0\nRiskForge Score: 10\nCVEs: None\n\nSolution:\nUpdate the OS on the remote host to a version which is still\n  supported and receiving security updates by the vendor.\n\n  Note / Important: Please create an override for this result if the target host is a:\n\n  - Windows system with Extended Security Updates (ESU)\n\n  - System with additional 3rd-party / non-vendor security updates like e.g. from \'TuxCare\',\n  \'Freexian Extended LTS\' or similar', 'Open', 'Critical', '2026-03-24 09:27:14', NULL, NULL, 10, '### Explanation\nThe vulnerability report indicates a critical issue with the operating system (OS) on a remote host. The OS is outdated and no longer receiving security updates from the vendor, making it vulnerable to exploitation.\n\n### Risk\nAn attacker could potentially gain unauthorized access to the system, steal sensitive data, or install malware. With a CVSS score of 10.0 and a RiskForge Score of 10, this vulnerability is extremely high-risk and should be addressed immediately.\n\n### Remediation Steps\n\n**For Windows Systems:**\n\n1. **Check for Extended Security Updates (ESU)**: Verify if the Windows system is eligible for ESU, which provides additional security updates beyond the standard support period.\n2. **Create an override**: If the system is eligible for ESU, create an override in your vulnerability management tool to exclude this result.\n3. **Update to a supported OS version**: Update the Windows system to a version that is still supported by the vendor and receiving regular security updates.\n\n**For Non-Windows Systems:**\n\n1. **Check for vendor-supported updates**: Verify if the system is receiving security updates from the vendor.\n2. **Update to a supported OS version**: Update the system to a version that is still supported by the vendor and receiving regular security updates.\n3. **Consider additional security updates**: If the system is receiving additional security updates from third-party providers (e.g., TuxCare, Freexian Extended LTS), ensure these updates are applied.\n\n**General Steps:**\n\n1. **Document the update process**: Record the steps taken to update the OS and any overrides created.\n2. **Verify the update**: Confirm that the OS has been updated to a supported version and that the vulnerability has been remediated.\n3. **Re-scan the system**: Run a vulnerability scan to verify that the issue has been resolved.', '2026-03-26 10:07:37');
+(108, 2, 10, 1, 'Operating System (OS) End of Life (EOL) Detection', 'Source: Scan #10\nAsset ID: 2\nPort: general/tcp\nCVSS: 10.0\nRiskForge Score: 10\nCVEs: None\n\nSolution:\nUpdate the OS on the remote host to a version which is still\n  supported and receiving security updates by the vendor.\n\n  Note / Important: Please create an override for this result if the target host is a:\n\n  - Windows system with Extended Security Updates (ESU)\n\n  - System with additional 3rd-party / non-vendor security updates like e.g. from \'TuxCare\',\n  \'Freexian Extended LTS\' or similar', 'Open', 'Critical', '2026-03-24 09:27:14', NULL, NULL, 10, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1007,20 +1024,22 @@ CREATE TABLE `users` (
   `password_hash` varchar(255) NOT NULL,
   `role` enum('ADMIN','VIEWER') NOT NULL DEFAULT 'VIEWER',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `retired` tinyint(1) DEFAULT 0
+  `retired` tinyint(1) DEFAULT 0,
+  `failed_attempts` int(11) DEFAULT 0,
+  `locked_until` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `created_at`, `retired`) VALUES
-(1, 'admin', '$2b$12$6aC7CRtpFJd294Hd.GD/LOcT5jQe2yjMlcucUmIQhba/C43GFlCfO', 'ADMIN', '2026-03-03 21:44:49', 0),
-(3, 'viewer', '$2b$12$wyYWbcp/zE6pdpjZTHLzXucXUJEXS5feeJkqj/xC2ld7b.erwNXjm', 'VIEWER', '2026-03-23 16:42:04', 0),
-(4, 'leggd', '$2b$12$wEu4JAvTyfNF6xOv7.PtneEyuteqfA8t2ZdbXn/unpuMIngOZeVy.', 'ADMIN', '2026-03-25 09:20:13', 0),
-(5, 'ostankovl', '$2b$12$pa/4GGstZ9WK5hejJR.oxenU8icOEFEMAqhSnR/ffFE4paqOF4gEe', 'ADMIN', '2026-03-25 09:21:07', 0),
-(6, 'bashird', '$2b$12$QFcVQPMCzRoY/68PbVsZaeqe2MW/ckHnhxErVOgQglQgvlG3Fkt4S', 'ADMIN', '2026-03-25 09:21:33', 0),
-(7, 'moored', '$2b$12$zaBVZPIsj7L2UH0Ni2fdve5h1GhqssdFGdHAQ0c5west0y1iDsdt6', 'VIEWER', '2026-03-25 09:21:51', 0);
+INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `created_at`, `retired`, `failed_attempts`, `locked_until`) VALUES
+(1, 'admin', '$2b$12$6aC7CRtpFJd294Hd.GD/LOcT5jQe2yjMlcucUmIQhba/C43GFlCfO', 'ADMIN', '2026-03-03 21:44:49', 0, 5, '2026-03-28 09:38:05'),
+(3, 'viewer', '$2b$12$wyYWbcp/zE6pdpjZTHLzXucXUJEXS5feeJkqj/xC2ld7b.erwNXjm', 'VIEWER', '2026-03-23 16:42:04', 0, 0, NULL),
+(4, 'leggd', '$2b$12$wEu4JAvTyfNF6xOv7.PtneEyuteqfA8t2ZdbXn/unpuMIngOZeVy.', 'ADMIN', '2026-03-25 09:20:13', 0, 0, NULL),
+(5, 'ostankovl', '$2b$12$pa/4GGstZ9WK5hejJR.oxenU8icOEFEMAqhSnR/ffFE4paqOF4gEe', 'ADMIN', '2026-03-25 09:21:07', 0, 0, NULL),
+(6, 'bashird', '$2b$12$QFcVQPMCzRoY/68PbVsZaeqe2MW/ckHnhxErVOgQglQgvlG3Fkt4S', 'ADMIN', '2026-03-25 09:21:33', 0, 0, NULL),
+(7, 'moored', '$2b$12$zaBVZPIsj7L2UH0Ni2fdve5h1GhqssdFGdHAQ0c5west0y1iDsdt6', 'VIEWER', '2026-03-25 09:21:51', 0, 0, NULL);
 
 --
 -- Indexes for dumped tables
@@ -1086,7 +1105,7 @@ ALTER TABLE `assets`
 -- AUTO_INCREMENT for table `audit_log`
 --
 ALTER TABLE `audit_log`
-  MODIFY `audit_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=108;
+  MODIFY `audit_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=125;
 
 --
 -- AUTO_INCREMENT for table `findings`
