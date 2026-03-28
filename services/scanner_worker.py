@@ -1,6 +1,7 @@
 import threading
 import time
 from db import execute_query
+from services.audit_service import log_event
 from services.gvm_service import get_gvm_task_status
 from services.gvm_service import get_gvm_findings
 from services.findings_service import store_findings, prioritise_findings
@@ -36,6 +37,15 @@ def check_active_scans():
         # Retrieve current status and progress from GVM
         status, progress = get_gvm_task_status(task_id)
 
+        # Log status update for audit visibility
+        log_event(
+            None,
+            "SCAN_STATUS_UPDATE",
+            "SCAN",
+            scan_id,
+            f"GVM status: {status}, progress: {progress}%"
+        )
+
         # If GVM scan has finished
         if status in FINISHED_STATES:
             # For Full scans, mark only the GVM phase as complete
@@ -52,6 +62,15 @@ def check_active_scans():
             WHERE scan_id=%s
             """
             execute_query(sql, (new_status, progress, scan_id))
+
+            # Log completion of GVM phase
+            log_event(
+                None,
+                "GVM_SCAN_COMPLETED",
+                "SCAN",
+                scan_id,
+                f"GVM phase completed with status: {new_status}"
+            )
 
         else:
             # Update scan with current in-progress status and progress
@@ -91,6 +110,15 @@ def check_finished_scans():
         """
         execute_query(sql, (scan["scan_id"]))
 
+        # Log full scan completion
+        log_event(
+            None,
+            "FULL_SCAN_COMPLETED",
+            "SCAN",
+            scan["scan_id"],
+            "GVM and AI phases completed"
+        )
+
     # Select scans that are finished but the findings have not been processed
     sql = """
     SELECT scan_id, asset_id, gvm_report_id, started_by
@@ -118,9 +146,27 @@ def check_finished_scans():
 
             # Apply PoC prioritisation logic
             findings = prioritise_findings(findings)
+
+            # Log findings processing
+            log_event(
+                None,
+                "GVM_FINDINGS_PROCESSED",
+                "SCAN",
+                scan_id,
+                f"{len(findings)} findings processed"
+            )
             
             # Create tickets from prioritised findings
             create_tickets(scan_id, asset_id, findings, created_by)
+
+            # Log ticket creation
+            log_event(
+                None,
+                "GVM_TICKETS_CREATED",
+                "SCAN",
+                scan_id,
+                "Tickets created from GVM findings"
+            )
 
             # Mark findings as processed to prevent duplicate processing
             sql = """
@@ -137,12 +183,19 @@ def check_finished_scans():
             WHERE asset_id = %s
             """
             execute_query(sql, (asset_id))
-            # Debug print
-            #print("Auto-parsed findings for scan " + str(scan_id))
 
         except Exception as e:
             # Handle parsing errors without stopping the worker
             print("Error auto-parsing scan " + str(scan_id) + ": " + str(e))
+
+            # Log processing failure
+            log_event(
+                None,
+                "GVM_PROCESSING_FAILED",
+                "SCAN",
+                scan_id,
+                f"Error processing findings: {str(e)}"
+            )
 
 def start_worker():
     """
@@ -159,7 +212,6 @@ def start_worker():
 
     # Start worker thread
     worker_thread.start()
-
 
 def worker_loop():
     """

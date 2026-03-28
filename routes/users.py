@@ -125,7 +125,7 @@ def user_detail(user_id):
         FROM users
         WHERE user_id = %s
         """
-        user = execute_query(sql, (user_id,), "one")
+        user = execute_query(sql, (user_id), "one")
 
         if user is None:
             abort(404)
@@ -175,7 +175,7 @@ def retire_user(user_id):
         SET retired = TRUE
         WHERE user_id = %s
         """
-        execute_query(sql, (user_id,))
+        execute_query(sql, (user_id))
 
         return redirect("/users")
 

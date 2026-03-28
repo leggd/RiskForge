@@ -177,7 +177,7 @@ def update_ticket(ticket_id):
             closed_at=NOW()
             WHERE ticket_id=%s
             """
-            execute_query(sql, (status, closed_reason, ticket_id,))
+            execute_query(sql, (status, closed_reason, ticket_id))
 
             # Record audit log for ticket closure
             log_event(
@@ -197,7 +197,7 @@ def update_ticket(ticket_id):
             closed_at=NULL
             WHERE ticket_id=%s
             """
-            execute_query(sql, (status, ticket_id,))
+            execute_query(sql, (status, ticket_id))
        
         # Log status change if different from previous state
         if old_status != status:

@@ -93,7 +93,7 @@ def start_scan():
         FROM assets
         WHERE asset_id = %s
         """
-        asset = execute_query(sql, (asset_id,), "one")
+        asset = execute_query(sql, (asset_id), "one")
 
         # Handle missing asset record
         if asset is None:
@@ -107,7 +107,7 @@ def start_scan():
         WHERE asset_id = %s 
         AND status NOT IN ('Done', 'Stopped', 'Interrupted', 'Aborted', 'Failed', 'GVM Complete')
         """
-        exists = execute_query(sql, (asset_id,), "one")
+        exists = execute_query(sql, (asset_id), "one")
 
         if exists:
             return "Scan already running for this asset"
@@ -271,7 +271,7 @@ def scan_detail(scan_id):
         JOIN assets ON scans.asset_id = assets.asset_id
         WHERE scans.scan_id = %s
         """
-        scan = execute_query(sql, (scan_id,), "one")
+        scan = execute_query(sql, (scan_id), "one")
 
         # Return 404 if scan does not exist (should never happen)
         if scan is None:
@@ -314,7 +314,7 @@ def scan_detail(scan_id):
             JOIN assets ON scans.asset_id = assets.asset_id
             WHERE scans.scan_id = %s
             """
-            scan = execute_query(sql, (scan_id,), "one")
+            scan = execute_query(sql, (scan_id), "one")
 
         # Fetch live findings from GVM for display    
         # Only retrieve GVM findings when scan is complete and report exists
@@ -336,7 +336,7 @@ def scan_detail(scan_id):
         WHERE scan_id = %s
         ORDER BY riskforge_score DESC
         """
-        stored_findings = execute_query(sql, (scan_id,), "all")
+        stored_findings = execute_query(sql, (scan_id), "all")
 
         # Render scan detail page with scan data and findings
         return render_template(

@@ -3,6 +3,7 @@ import json
 from db import execute_query
 from services.findings_service import store_findings, prioritise_findings
 from services.ticket_service import create_tickets
+from services.audit_service import log_event
 import os
 from dotenv import load_dotenv
 
@@ -206,6 +207,15 @@ def run_scan_thread(scan_id, target_ip, asset_id, user_id):
     with final status and results
     """
 
+    # Log scan start
+    log_event(
+        None,
+        "SCAN_STARTED",
+        "SCAN",
+        scan_id,
+        f"Scan started for asset {asset_id} ({target_ip})"
+    )
+
     # Execute AI scan and retrieve structured result
     result = run_ai_scan(target_ip, scan_id)
 
@@ -220,6 +230,15 @@ def run_scan_thread(scan_id, target_ip, asset_id, user_id):
         """
         execute_query(sql, ("Failed", "AI scanner returned no data", scan_id))
 
+        # Log failure
+        log_event(
+            None,
+            "SCAN_FAILED",
+            "SCAN",
+            scan_id,
+            "AI scanner returned no data"
+        )
+
     else:
         # Extract findings and summary from scan result
         findings = result.get("findings", [])
@@ -231,8 +250,26 @@ def run_scan_thread(scan_id, target_ip, asset_id, user_id):
         # Apply PoC prioritisation logic
         findings = prioritise_findings(findings)
 
+        # Log findings processed
+        log_event(
+            None,
+            "FINDINGS_PROCESSED",
+            "SCAN",
+            scan_id,
+            f"{len(findings)} findings processed"
+        )
+
         # Create tickets from prioritised findings
         create_tickets(scan_id, asset_id, findings, user_id)
+
+        # Log ticket creation
+        log_event(
+            None,
+            "TICKETS_CREATED",
+            "SCAN",
+            scan_id,
+            "Tickets created from scan findings"
+        )
 
         # Update scan record with completion status and AI verdict
         sql = """
@@ -245,6 +282,15 @@ def run_scan_thread(scan_id, target_ip, asset_id, user_id):
         WHERE scan_id=%s
         """
         execute_query(sql, ("Done", 100, summary, scan_id))
+
+        # Log completion
+        log_event(
+            None,
+            "SCAN_COMPLETED",
+            "SCAN",
+            scan_id,
+            "Scan completed successfully"
+        )
 
         # Update last_scanned_at time on asset record
         sql = """
@@ -263,6 +309,15 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
     processes are complete, the scan is marked as fully done.
     """
 
+    # Log AI phase start
+    log_event(
+        None,
+        "AI_SCAN_STARTED",
+        "SCAN",
+        scan_id,
+        f"AI scan started for asset {asset_id} ({target_ip})"
+    )
+
     # Execute AI scan and retrieve result
     result = run_ai_scan(target_ip, scan_id)
 
@@ -275,6 +330,15 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
         """
         execute_query(sql, ("AI scanner returned no data", scan_id))
 
+        # Log failure
+        log_event(
+            None,
+            "AI_SCAN_FAILED",
+            "SCAN",
+            scan_id,
+            "AI scanner returned no data"
+        )
+
     else:
         # Extract findings and summary from AI scan result
         findings = result.get("findings", [])
@@ -286,8 +350,26 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
         # Apply prioritisation logic to select key findings
         findings = prioritise_findings(findings)
 
+        # Log findings processed
+        log_event(
+            None,
+            "AI_FINDINGS_PROCESSED",
+            "SCAN",
+            scan_id,
+            f"{len(findings)} findings processed"
+        )
+
         # Create remediation tickets from prioritised findings
         create_tickets(scan_id, asset_id, findings, user_id)
+
+        # Log ticket creation
+        log_event(
+            None,
+            "AI_TICKETS_CREATED",
+            "SCAN",
+            scan_id,
+            "Tickets created from AI scan"
+        )
 
         # Update scan with AI results and mark AI phase complete
         sql = """
@@ -296,6 +378,15 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
         WHERE scan_id=%s
         """
         execute_query(sql, (summary, scan_id))
+
+        # Log AI completion
+        log_event(
+            None,
+            "AI_SCAN_COMPLETED",
+            "SCAN",
+            scan_id,
+            "AI scan phase completed"
+        )
 
     # Check if GVM scan has completed
     sql = """
@@ -313,6 +404,15 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
         WHERE scan_id=%s
         """
         execute_query(sql, (scan_id))
+
+        # Log full scan completion
+        log_event(
+            None,
+            "FULL_SCAN_COMPLETED",
+            "SCAN",
+            scan_id,
+            "Full scan (GVM + AI) completed"
+        )
         
         # Update last_scanned_at time on asset record
         sql = """

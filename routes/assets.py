@@ -296,7 +296,7 @@ def retire_asset(asset_id):
         SET retired = TRUE 
         WHERE asset_id = %s
         """              
-        execute_query(sql, (asset_id,))
+        execute_query(sql, (asset_id))
 
         # Record audit log for asset retirement
         log_event(

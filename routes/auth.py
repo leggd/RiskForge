@@ -10,7 +10,7 @@ auth_bp = Blueprint("auth", __name__)
 def unlock_account(user_id):
     try:
         sql = """UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE user_id = %s"""
-        execute_query(sql, (user_id,))
+        execute_query(sql, (user_id))
     except Exception as e:
         print(f"error unlocking account: {e}")
 
@@ -52,7 +52,7 @@ def login():
 
         try:
             sql = "SELECT * FROM users WHERE username = %s"
-            user = execute_query(sql, (username,), "one")
+            user = execute_query(sql, (username), "one")
 
             # Prevent login if user account retired
             if user and user["retired"]:
