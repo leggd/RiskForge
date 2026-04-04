@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, session, redirect
 from dotenv import load_dotenv
 from services.scanner_worker import start_worker
 from routes import auth_bp, dashboard_bp, assets_bp, scans_bp, tickets_bp, users_bp, audit_bp
@@ -12,6 +12,13 @@ app = Flask(__name__)
 
 # Configure secret key for session management
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+
+# Redirect to login page if user visits '/' root or dashboard if logged in
+@app.route("/")
+def index():
+    if "user_id" in session:
+        return redirect("/dashboard")
+    return redirect("/login")
 
 # Register authentication routes (login, logout)
 app.register_blueprint(auth_bp)
@@ -54,4 +61,9 @@ if __name__ == "__main__":
     start_worker()
 
     # Run Flask application
-    app.run(app.run(host="0.0.0.0", port=5000, debug=True))
+    app.run(
+    host="127.0.0.1",
+    port=5000,
+    debug=True,
+    ssl_context=("cert.pem", "key.pem")
+)
