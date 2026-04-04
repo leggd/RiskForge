@@ -1,21 +1,19 @@
 {% extends "base.html" %}
 
 {% block title %}Riskforge — Assets{% endblock %}
-
 {% block page_h1 %}Assets{% endblock %}
-
 {% block page_subtitle %}Register and manage hosts{% endblock %}
 
 {% block content %}
 
-{# Display error message passed from back end #}
+{# Display error message #}
 {% if error %}
 <div class="card" style="margin-bottom:20px; color:#ff6b6b;">
   {{ error }}
 </div>
 {% endif %}
 
-{# Display success message passed from back end #}
+{# Display success message #}
 {% if success %}
 <div class="card" style="margin-bottom:20px; color:#4ade80;">
   {{ success }}
@@ -25,25 +23,27 @@
 <main class="content">
   <section class="grid three-col">
 
-    {# *********** Asset Inventory Table *********** #}
-
+    {# *********** Asset Inventory *********** #}
     <article class="card">
 
-      {# Filter controls (not yet implemented) #}
-      <div class="card-head">
-        <div>
-          <h2>Asset Inventory</h2>
-          <p>Assets being monitored by RiskForge</p>
-        </div>
-        <div class="card-actions">
-          <select class="select">
-            <option>All</option><option>Public</option><option>Private</option>
-          </select>
-          <select class="select">
-            <option>All types</option><option>Web Server</option><option>File Server</option><option>Workstation</option>
-          </select>
-        </div>
-      </div>
+ <div class="card-head">
+  <div>
+    <h2>Asset Inventory</h2>
+    <p>Assets being monitored by RiskForge</p>
+  </div>
+
+  <div>
+    {% if request.args.get("show_retired") == "1" %}
+      <a href="/assets" class="btn btn-primary">
+        Hide Retired
+      </a>
+    {% else %}
+      <a href="/assets?show_retired=1" class="btn btn-primary">
+        Show Retired
+      </a>
+    {% endif %}
+  </div>
+</div>
 
       <div class="table-wrap">
         <table class="table">
@@ -57,27 +57,34 @@
               <th class="right">Last scan</th>
             </tr>
           </thead>
-          <tbody>
 
-            {# Loop through assets list passed from back end ordered by created_at descending #}
+          <tbody>
             {% for asset in assets %}
-            <tr>
+            
+
               <td>
-                {# Link to asset detail page #}
-                <a href="/assets/{{ asset.asset_id }}">{{ asset.name }}</a>
+                <a href="/assets/{{ asset.asset_id }}">
+                  {{ asset.name }}
+                </a>
+
+                {% if asset.retired %}
+
+                  <br><i>Retired</i><br>
+                {% endif %}
               </td>
+
               <td>{{ asset.ip_address }}</td>
 
-              {# Format values for readability #}
-              
               <td>{{ asset.asset_type.replace("_", " ").title() }}</td>
+
               <td>
                 {% if asset.exposure == "PUBLIC" %}
                   <span class="pill pill-open">Public</span>
                 {% else %}
                   <span class="pill pill-progress">Private</span>
                 {% endif %}
-              </td>  
+              </td>
+
               <td>
                 {% if asset.criticality == "MISSION_CRITICAL" %}
                   <span class="badge badge-critical">Mission Critical</span>
@@ -90,8 +97,6 @@
                 {% endif %}
               </td>
 
-              
-              {# Display last scan timestamp or fallback #}
               <td>
                 {% if asset.last_scanned_at %}
                   {{ asset.last_scanned_at }}
@@ -99,16 +104,23 @@
                   Never
                 {% endif %}
               </td>
+
             </tr>
             {% endfor %}
 
+            {% if assets|length == 0 %}
+            <tr>
+              <td colspan="6" style="text-align:center;">
+                No assets found.
+              </td>
+            </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>
     </article>
 
     {# *********** Network Discovery *********** #}
-    {# Only show form and network discovery list to admin #}
     {% if role == "ADMIN" %}
     <article class="card">
       <div class="card-head">
@@ -116,7 +128,7 @@
           <h2>Network Discovery</h2>
           <p>
             Live hosts on 10.0.96.0/24<br>
-            (Click IP address to pre-fill Add Asset form)
+            (Click IP to pre-fill Add Asset)
           </p>
         </div>
       </div>
@@ -130,19 +142,15 @@
           </thead>
           <tbody>
 
-            {# Display discovered hosts from ping sweep if discovered_hosts list is present #}
-  
             {% if discovered_hosts %}
               {% for ip in discovered_hosts %}
               <tr>
                 <td>
-                  {# Clicking IP reloads page with ?ip= to prefill add asset form #}
                   <a href="/assets?ip={{ ip }}">{{ ip }}</a>
                 </td>
               </tr>
               {% endfor %}
             {% else %}
-              {# Fallback if no hosts discovered #}
               <tr>
                 <td style="text-align:center;" class="cell-sub">
                   No hosts found — Kali may be unreachable
@@ -155,34 +163,25 @@
       </div>
     </article>
 
-    {# *********** Add Asset Form *********** #}
-
+    {# *********** Add Asset *********** #}
     <article class="card">
       <div class="card-head">
         <div>
           <h2>Add Asset</h2>
-          <p>Register a new host in the inventory</p>
+          <p>Register a new host</p>
         </div>
-        <span class="badge"></span>
       </div>
 
-      {# Submit new asset to POST /assets route #}
       <form method="POST" action="/assets">
         <div style="padding: 0 16px 16px;">
 
-          {# Prefill name with OS detection result if present #}
           <label class="cell-sub">Asset name</label>
           <input class="select" style="width:100%; margin:8px 0 12px;" name="name"
-            placeholder="e.g., web-02"
-            value="{% if selected_os %}{{ selected_os }}{% else %}{% endif %}"
-            required/>
+            value="{% if selected_os %}{{ selected_os }}{% endif %}" required/>
 
-          {# Pre-fill IP if selected from network discovery list #}
           <label class="cell-sub">IP address</label>
           <input class="select" style="width:100%; margin:8px 0 12px;" name="ip_address"
-            placeholder="e.g., 192.168.10.11"
-            value="{% if selected_ip %}{{ selected_ip }}{% else %}{% endif %}"
-            required/>
+            value="{% if selected_ip %}{{ selected_ip }}{% endif %}" required/>
 
           <label class="cell-sub">Asset type</label>
           <select class="select" style="width:100%; margin:8px 0 12px;" name="asset_type" required>
@@ -207,7 +206,6 @@
             <option value="MISSION_CRITICAL">Mission-critical</option>
           </select>
 
-          {# Form actions #}
           <div class="row-actions">
             <button class="btn btn-primary" type="submit">Save</button>
             <button class="btn btn-ghost" type="reset">Clear</button>
@@ -217,6 +215,7 @@
       </form>
     </article>
     {% endif %}
+
   </section>
 </main>
 

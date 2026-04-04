@@ -5,7 +5,7 @@ from services.auth_utils import require_role
 from services.gvm_service import start_gvm_scan, get_gvm_task_status, get_gvm_findings
 from services.scanner_service import run_scan_thread, run_full_ai_thread
 import threading
-
+import time
 scans_bp = Blueprint("scans", __name__)
 
 @scans_bp.route("/scans", methods=["GET"])
@@ -114,8 +114,33 @@ def start_scan():
 
         # Handle GVM-only scan
         if engine == "GVM":
+             # Get asset name for audit logging
+            sql = """
+            SELECT name 
+            FROM assets 
+            WHERE asset_id = %s
+            """
+            asset = execute_query(sql, (asset_id), "one")
+            # Record audit log for GVM scan start
+            log_event(
+                session["user_id"],
+                "START_SCAN",
+                "SCAN",
+                None,
+                f"GVM scan requested against {asset["name"]}"
+            )
             task_id, report_id = start_gvm_scan(target_ip)
-
+            if task_id and report_id:
+                # Wait 1 second to ensure entry after scan request log
+                time.sleep(1)
+                log_event(
+                    None,
+                    "START_SCAN",
+                    "SCAN",
+                    None,
+                    f"GVM scan started against {asset["name"]}"
+                )
+                
             sql = """
             INSERT INTO scans(
             asset_id,
@@ -140,21 +165,27 @@ def start_scan():
                 )
             )
 
-            # Record audit log for GVM scan start
+        # Handle AI-only scan
+        elif engine == "AI":
+            # Get asset name for audit logging
+            sql = """
+            SELECT name 
+            FROM assets 
+            WHERE asset_id = %s
+            """
+            asset = execute_query(sql, (asset_id), "one")
+            # Record audit log for AI scan start
             log_event(
                 session["user_id"],
                 "START_SCAN",
                 "SCAN",
-                scan_id,
-                f"GVM scan started for asset_id={asset_id}, task_id={task_id}"
+                None,
+                f"Standalone AI scan requested against {asset["name"]}"
             )
-
-        # Handle AI-only scan
-        elif engine == "AI":
             sql = """
             INSERT INTO scans(
             asset_id,
-            started_by,
+            started_by, 
             engine,
             status,
             progress)
@@ -170,16 +201,6 @@ def start_scan():
                     0
                 )
             )
-
-            # Record audit log for AI scan start
-            log_event(
-                session["user_id"],
-                "START_SCAN",
-                "SCAN",
-                scan_id,
-                f"AI scan started for asset_id={asset_id}"
-            )
-
             # Start AI scan in background thread
             user_id = session["user_id"]
             ai_solo_scan_thread = threading.Thread(
@@ -190,6 +211,21 @@ def start_scan():
 
         # Handle combined (GVM + AI) scan
         elif engine == "Full":
+            # Get asset name for audit logging
+            asset_sql = """
+            SELECT name 
+            FROM assets 
+            WHERE asset_id = %s
+            """
+            asset = execute_query(asset_sql, (asset_id), "one")
+            # Record audit log for full scan start
+            log_event(
+                session["user_id"],
+                "START_SCAN",
+                "SCAN",
+                None,
+                f"Full scan requested for {asset["name"]}"
+            )
             task_id, report_id = start_gvm_scan(target_ip)
 
             sql = """
@@ -214,16 +250,7 @@ def start_scan():
                     "Running",
                     0
                 )
-            )
-
-            # Record audit log for full scan start
-            log_event(
-                session["user_id"],
-                "START_SCAN",
-                "SCAN",
-                scan_id,
-                f"Full scan started for asset_id={asset_id}"
-            )
+                )
 
             # Start combined scan in background thread
             user_id = session["user_id"]

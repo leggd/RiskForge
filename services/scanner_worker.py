@@ -37,15 +37,6 @@ def check_active_scans():
         # Retrieve current status and progress from GVM
         status, progress = get_gvm_task_status(task_id)
 
-        # Log status update for audit visibility
-        log_event(
-            None,
-            "SCAN_STATUS_UPDATE",
-            "SCAN",
-            scan_id,
-            f"GVM status: {status}, progress: {progress}%"
-        )
-
         # If GVM scan has finished
         if status in FINISHED_STATES:
             # For Full scans, mark only the GVM phase as complete
@@ -138,6 +129,14 @@ def check_finished_scans():
         created_by = scan["started_by"]
 
         try:
+            # Mark findings as processed to prevent duplicate processing
+            sql = """
+            UPDATE scans
+            SET findings_parsed = 1
+            WHERE scan_id = %s
+            """
+            execute_query(sql, (scan_id))
+
             # Retrieve findings from GVM report
             findings = get_gvm_findings(report_id, limit=100)
 
@@ -165,16 +164,8 @@ def check_finished_scans():
                 "GVM_TICKETS_CREATED",
                 "SCAN",
                 scan_id,
-                "Tickets created from GVM findings"
+                f"{len(findings)} tickets created from GVM findings"
             )
-
-            # Mark findings as processed to prevent duplicate processing
-            sql = """
-            UPDATE scans
-            SET findings_parsed = 1
-            WHERE scan_id = %s
-            """
-            execute_query(sql, (scan_id))
 
             # Update last_scanned_at time on asset record
             sql = """

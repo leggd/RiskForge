@@ -74,6 +74,14 @@ def login():
                 if user["locked_until"] and datetime.now() < user["locked_until"]:
                     unlock_time = user["locked_until"].strftime("%H:%M")
                     error = f"Account locked. Try again after {unlock_time}"
+                    log_event(
+                            user["user_id"],
+                            "MAX_FAILED_LOGIN",
+                            "USER",
+                            user["user_id"],
+                            f"User: {username} account locked until {user["locked_until"]}"
+                    )
+
 
                 else:
                     password_bytes = password.encode("utf-8")
@@ -93,7 +101,7 @@ def login():
                             user["user_id"],
                             "LOGIN_SUCCESS",
                             "USER",
-                            None,
+                            user["user_id"],
                             f"User: {username} logged in successfully."
                         )
 
@@ -144,7 +152,7 @@ def logout():
             "LOGOUT",
             "USER",
             session["user_id"],
-            f"User {session['username']} logged out."
+            f"User: {session['username']} logged out."
         )
 
     # Clear session data to remove authentication state

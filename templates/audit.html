@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Riskforge — Audit Logs{% endblock %}
+{% block page_h1 %}Audit Logs{% endblock %}
+{% block page_subtitle %}System and user activity{% endblock %}
+
+{% block content %}
+
+
+{# *********** Audit Log Table *********** #}
+<article class="card">
+  <div class="card-head">
+    <div>
+      <h2>Audit Log</h2>
+      <p>Recent activity across the system</p>
+    </div>
+  </div>
+  <div style="padding:10px;">
+    <form method="GET" style="display:flex; gap:10px; flex-wrap:wrap;">
+
+      {# Action filter #}
+      <select name="action" class="select">
+        <option value="">All Actions</option>
+
+        <option value="LOGIN_SUCCESS" {% if request.args.get("action") == "LOGIN_SUCCESS" %}selected{% endif %}>Login Success</option>
+        <option value="LOGIN_FAILED" {% if request.args.get("action") == "LOGIN_FAILED" %}selected{% endif %}>Login Failed</option>
+        <option value="LOGOUT" {% if request.args.get("action") == "LOGOUT" %}selected{% endif %}>Logout</option>
+        <option value="MAX_FAILED_LOGIN" {% if request.args.get("action") == "MAX_FAILED_LOGIN" %}selected{% endif %}>Max Failed Login</option>
+
+        <option value="CREATE_ASSET" {% if request.args.get("action") == "CREATE_ASSET" %}selected{% endif %}>Create Asset</option>
+        <option value="UPDATE_ASSET" {% if request.args.get("action") == "UPDATE_ASSET" %}selected{% endif %}>Update Asset</option>
+        <option value="RETIRE_ASSET" {% if request.args.get("action") == "RETIRE_ASSET" %}selected{% endif %}>Retire Asset</option>
+
+        <option value="START_SCAN" {% if request.args.get("action") == "START_SCAN" %}selected{% endif %}>Start Scan</option>
+        <option value="SCAN_STARTED" {% if request.args.get("action") == "SCAN_STARTED" %}selected{% endif %}>Scan Started</option>
+        <option value="SCAN_COMPLETED" {% if request.args.get("action") == "SCAN_COMPLETED" %}selected{% endif %}>Scan Completed</option>
+        <option value="FULL_SCAN_COMPLETED" {% if request.args.get("action") == "FULL_SCAN_COMPLETED" %}selected{% endif %}>Full Scan Completed</option>
+
+        <option value="FINDINGS_PROCESSED" {% if request.args.get("action") == "FINDINGS_PROCESSED" %}selected{% endif %}>Findings Processed</option>
+        <option value="GVM_FINDINGS_PROCESSED" {% if request.args.get("action") == "GVM_FINDINGS_PROCESSED" %}selected{% endif %}>GVM Findings Processed</option>
+        <option value="AI_FINDINGS_PROCESSED" {% if request.args.get("action") == "AI_FINDINGS_PROCESSED" %}selected{% endif %}>AI Findings Processed</option>
+
+        <option value="TICKETS_CREATED" {% if request.args.get("action") == "TICKETS_CREATED" %}selected{% endif %}>Tickets Created</option>
+        <option value="GVM_TICKETS_CREATED" {% if request.args.get("action") == "GVM_TICKETS_CREATED" %}selected{% endif %}>GVM Tickets Created</option>
+        <option value="AI_TICKETS_CREATED" {% if request.args.get("action") == "AI_TICKETS_CREATED" %}selected{% endif %}>AI Tickets Created</option>
+
+        <option value="GVM_SCAN_COMPLETED" {% if request.args.get("action") == "GVM_SCAN_COMPLETED" %}selected{% endif %}>GVM Scan Completed</option>
+        <option value="AI_SCAN_COMPLETED" {% if request.args.get("action") == "AI_SCAN_COMPLETED" %}selected{% endif %}>AI Scan Completed</option>
+      </select>
+
+      {# User filter #}
+      <select name="user" class="select">
+        <option value="">All Users</option>
+        <option value="SYSTEM" {% if request.args.get("user") == "SYSTEM" %}selected{% endif %}>SYSTEM</option>
+        {% for u in users %}
+          <option value="{{ u.user_id }}"
+            {% if request.args.get("user") == u.user_id|string %}selected{% endif %}>
+            {{ u.username }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <button class="btn btn-primary" type="submit">Filter</button>
+
+      {# Reset button #}
+      <a href="/audit" class="btn btn-ghost">Reset</a>
+
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Description</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        {% for log in logs %}
+        <tr>
+          <td>{{ log.created_at }}</td>
+
+          <td>
+            {% if log.username %}
+              {{ log.username }}
+            {% else %}
+              SYSTEM
+            {% endif %}
+          </td>
+          <td>
+              {{ log.action }}
+          </td>
+          <td>{{ log.details }}</td>
+          <td>{{ log.ip_address or "-" }}</td>
+        </tr>
+        {% endfor %}
+
+        {% if logs|length == 0 %}
+        <tr>
+          <td colspan="5" style="text-align:center;">
+            No audit logs found
+          </td>
+        </tr>
+        {% endif %}
+
+      </tbody>
+    </table>
+  </div>
+</article>
+
+{% endblock %}

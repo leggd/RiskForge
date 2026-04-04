@@ -5,50 +5,52 @@
 {% block page_subtitle %}Remediation workflow{% endblock %}
 
 {% block content %}
-
+{# *********** Ticket Filters *********** #}
 <article class="card">
   <div class="card-head">
     <div>
       <h2>Ticket List</h2>
       <p>All tickets (newest first)</p>
     </div>
-
-    <div>
-      <a class="btn btn-ghost" href="/scans">Back to Scans</a>
-    </div>
   </div>
+  <div style="padding:16px;">
+    <form method="GET" style="display:flex; gap:10px; flex-wrap:wrap;">
 
-  <div class="table-wrap">
-
-    {# *********** Ticket Filters *********** #}
-    {# Submit selected filters via GET to tickets route #}
-    <form method="GET">
-
-      <label>Status:</label>
-      <select name="status">
-        <option value="">All</option>
-        <option value="Open">Open</option>
-        <option value="In Progress">In Progress</option>
-        <option value="Closed">Closed</option>
+      {# Status filter #}
+      <select name="status" class="select">
+        <option value="">All Statuses</option>
+        <option value="Open" {% if request.args.get("status") == "Open" %}selected{% endif %}>Open</option>
+        <option value="In Progress" {% if request.args.get("status") == "In Progress" %}selected{% endif %}>In Progress</option>
+        <option value="Closed" {% if request.args.get("status") == "Closed" %}selected{% endif %}>Closed</option>
       </select>
 
-      <label>Priority:</label>
-      <select name="priority">
-        <option value="">All</option>
-        <option value="Critical">Critical</option>
-        <option value="High">High</option>
-        <option value="Medium">Medium</option>
-        <option value="Low">Low</option>
+      {# Priority filter #}
+      <select name="priority" class="select">
+        <option value="">All Priorities</option>
+        <option value="Critical" {% if request.args.get("priority") == "Critical" %}selected{% endif %}>Critical</option>
+        <option value="High" {% if request.args.get("priority") == "High" %}selected{% endif %}>High</option>
+        <option value="Medium" {% if request.args.get("priority") == "Medium" %}selected{% endif %}>Medium</option>
+        <option value="Low" {% if request.args.get("priority") == "Low" %}selected{% endif %}>Low</option>
       </select>
-      <label>Asset:</label>
-      <select name="asset_id">
-        <option value="">All</option>
+
+      {# Asset filter #}
+      <select name="asset_id" class="select">
+        <option value="">All Assets</option>
         {% for asset in assets %}
-          <option value="{{ asset.asset_id }}">{{ asset.name }}</option>
+          <option value="{{ asset.asset_id }}"
+            {% if request.args.get("asset_id") == asset.asset_id|string %}selected{% endif %}>
+            {{ asset.name }}
+          </option>
         {% endfor %}
       </select>
-      <button type="submit">Apply</button>
+
+      <button class="btn btn-primary" type="submit">Filter</button>
+
+      {# Reset button #}
+      <a href="/tickets" class="btn btn-ghost">Reset</a>
     </form>
+  </div>
+  <div class="table-wrap">
 
     <table class="table">
       <thead>

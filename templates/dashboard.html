@@ -9,26 +9,33 @@
 {# *********** KPI Summary Cards *********** #}
 <section class="grid kpis" style="margin-bottom: 14px;">
 
-  <article class="card kpi">
-    <div class="kpi-top">
-      <span class="kpi-label">Total Assets</span>
-    </div>
-    <div class="kpi-value">{{ metrics.total_assets }}</div>
-    <div class="kpi-sub">
-      {{ metrics.active_assets }} active - {{ metrics.retired_assets }} retired
-    </div>
-  </article>
+  {# Assets #}
+  <a href="/assets" style="text-decoration:none; color:inherit;">
+    <article class="card kpi">
+      <div class="kpi-top">
+        <span class="kpi-label">Total Assets</span>
+      </div>
+      <div class="kpi-value">{{ metrics.total_assets }}</div>
+      <div class="kpi-sub">
+        {{ metrics.active_assets }} active · {{ metrics.retired_assets }} retired
+      </div>
+    </article>
+  </a>
 
-  <article class="card kpi">
-    <div class="kpi-top">
-      <span class="kpi-label">Total Scans</span>
-    </div>
-    <div class="kpi-value">{{ metrics.total_scans }}</div>
-    <div class="kpi-sub">
-      {{ metrics.active_scans }} running - {{ metrics.completed_scans }} done
-    </div>
-  </article>
+  {# Scans #}
+  <a href="/scans" style="text-decoration:none; color:inherit;">
+    <article class="card kpi">
+      <div class="kpi-top">
+        <span class="kpi-label">Total Scans</span>
+      </div>
+      <div class="kpi-value">{{ metrics.total_scans }}</div>
+      <div class="kpi-sub">
+        {{ metrics.active_scans }} running - {{ metrics.completed_scans }} done
+      </div>
+    </article>
+  </a>
 
+{# Findings #}
   <article class="card kpi">
     <div class="kpi-top">
       <span class="kpi-label">Total Findings</span>
@@ -39,15 +46,18 @@
     </div>
   </article>
 
-  <article class="card kpi">
-    <div class="kpi-top">
-      <span class="kpi-label">Open Tickets</span>
-    </div>
-    <div class="kpi-value">{{ metrics.open_tickets }}</div>
-    <div class="kpi-sub">
-      {{ metrics.in_progress_tickets }} in progress
-    </div>
-  </article>
+  {# Tickets #}
+  <a href="/tickets" style="text-decoration:none; color:inherit;">
+    <article class="card kpi">
+      <div class="kpi-top">
+        <span class="kpi-label">Open Tickets</span>
+      </div>
+      <div class="kpi-value">{{ metrics.open_tickets }}</div>
+      <div class="kpi-sub">
+        {{ metrics.in_progress_tickets }} in progress
+      </div>
+    </article>
+  </a>
 
 </section>
 

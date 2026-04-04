@@ -39,21 +39,35 @@ def assets():
         if result:
             selected_os = result["os"]
 
-    # Retrieve all non-retired assets from database
+    # Retrieve filter parameter for retired assets
+    show_retired = request.args.get("show_retired")
+
+    # Retrieve assets from database
     try:
         sql = """
-        SELECT * FROM assets 
-        WHERE retired = FALSE
-        ORDER BY created_at DESC
+        SELECT * FROM assets
+        WHERE 1=1
         """
-        asset_list = execute_query(sql, None, "all")
+
+        filter_parameters = []
+
+        # If checkbox is not ticked only show active assets
+        if show_retired != "1":
+            sql += " AND retired = FALSE"
+
+        # If checkbox is ticked show all including retired
+        sql += " ORDER BY created_at DESC"
+
+        filter_parameters = tuple(filter_parameters)
+
+        asset_list = execute_query(sql, filter_parameters, "all")
 
     # Handle database errors gracefully
     except Exception as e:
         asset_list = []
         error = "Database error: " + str(e)
 
-    # Render template with asset and discovery data with error/success
+    # Render template with asset and discovery data
     return render_template(
         "assets.html",
         assets=asset_list,
@@ -63,7 +77,8 @@ def assets():
         selected_ip=selected_ip,
         selected_os=selected_os,
         username=session["username"],
-        role=session["role"])
+        role=session["role"]
+    )
 
 @assets_bp.route("/assets", methods=["POST"])
 def add_asset():
@@ -290,6 +305,13 @@ def retire_asset(asset_id):
     if not require_role("ADMIN"):
         abort(403, description="Only admins can retire assets")
     try:
+        # Get asset name for audit logging
+        sql = """
+        SELECT name 
+        FROM assets 
+        WHERE asset_id = %s
+        """
+        asset = execute_query(sql, (asset_id), "one")
         # Mark asset as retired (soft delete)
         sql = """
         UPDATE assets 
@@ -304,7 +326,7 @@ def retire_asset(asset_id):
             "RETIRE_ASSET",
             "ASSET",
             asset_id,
-            f"Asset {asset_id} marked as retired"
+            f"Asset: {asset["name"]} marked as retired"
         )
 
         # Redirect to assets list after successful retirement

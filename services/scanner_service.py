@@ -1,5 +1,6 @@
 import paramiko
 import json
+import time
 from db import execute_query
 from services.findings_service import store_findings, prioritise_findings
 from services.ticket_service import create_tickets
@@ -34,8 +35,7 @@ def run_terminal(command):
         return output
 
     except Exception as e:
-        print("SSH connection failed:")
-        print(e)
+        print("SSH connection failed: " + str(e))
         return None
 
 def run_ping_sweep(subnet):
@@ -206,14 +206,22 @@ def run_scan_thread(scan_id, target_ip, asset_id, user_id):
     applies prioritisation, creates tickets and updates the scan record
     with final status and results
     """
-
+    # Get asset name for audit logging
+    sql = """
+    SELECT name 
+    FROM assets 
+    WHERE asset_id = %s
+    """
+    asset = execute_query(sql, (asset_id), "one")
+    # Wait 1 second to ensure entry after scan request log
+    time.sleep(1)
     # Log scan start
     log_event(
         None,
         "SCAN_STARTED",
         "SCAN",
         scan_id,
-        f"Scan started for asset {asset_id} ({target_ip})"
+        f"Standalone AI scan started against asset {asset["name"]}"
     )
 
     # Execute AI scan and retrieve structured result
@@ -308,14 +316,22 @@ def run_full_ai_thread(scan_id, target_ip, asset_id, user_id):
     findings, creates tickets, and updates the scan record. If both AI and GVM
     processes are complete, the scan is marked as fully done.
     """
-
+    # Get asset name for audit logging
+    sql = """
+    SELECT name 
+    FROM assets 
+    WHERE asset_id = %s
+    """
+    asset = execute_query(sql, (asset_id), "one")
+    # Wait 1 second to ensure entry after scan request log
+    time.sleep(1)
     # Log AI phase start
     log_event(
         None,
-        "AI_SCAN_STARTED",
+        "SCAN_STARTED",
         "SCAN",
         scan_id,
-        f"AI scan started for asset {asset_id} ({target_ip})"
+        f"Full scan started against asset {asset["name"]}"
     )
 
     # Execute AI scan and retrieve result

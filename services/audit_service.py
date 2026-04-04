@@ -1,5 +1,5 @@
 from db import execute_query
-from flask import request
+from flask import request, has_request_context
 
 def log_event(user_id, action, entity_type, entity_id=None, details=None):
     """
@@ -9,8 +9,10 @@ def log_event(user_id, action, entity_type, entity_id=None, details=None):
     and the originating IP address, then stores the record in the audit_log table
     """
     try:
-        # Obtain IP address of client making the request
-        ip_address = request.remote_addr
+        # Obtain IP address only if a user initiated audit log
+        ip_address = None
+        if has_request_context():
+            ip_address = request.remote_addr
 
         # Insert audit log record into database
         sql = """
@@ -25,7 +27,6 @@ def log_event(user_id, action, entity_type, entity_id=None, details=None):
         VALUES (%s, %s, %s, %s, %s, %s)
         """
 
-        # Execute query with provided values
         execute_query(
             sql,
             (
@@ -39,5 +40,4 @@ def log_event(user_id, action, entity_type, entity_id=None, details=None):
         )
 
     except Exception as e:
-        # Catch and print errors to prevent logging failures from breaking app flow
         print("Audit Log Error: " + str(e))

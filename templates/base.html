@@ -38,13 +38,11 @@
         <a class="nav-item" href="/scans"><span class="nav-dot"></span>Scans</a>
         <a class="nav-item" href="/tickets"><span class="nav-dot"></span>Tickets</a>
 
-        <div class="nav-section">Insights</div>
-        <a class="nav-item" href="#"><span class="nav-dot"></span>Reports</a>
-
         <div class="nav-section">Admin</div>
-        {# Only show users button to admin users #}
+        {# Only show users and audit log button to admin users #}
         {% if role == "ADMIN" %}
         <a class="nav-item" href="/users"><span class="nav-dot"></span>Users</a>
+        <a class="nav-item" href="/audit"><span class="nav-dot"></span>Audit Logs</a>
         {% endif %}
         <a class="nav-item" href="/logout"><span class="nav-dot"></span>Logout</a>
       </nav>

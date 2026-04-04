@@ -6,7 +6,6 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
 # GVM connection configuration (scanner host and credentials)
 GVM_HOST = os.getenv("SCANNER_HOST")
 GVM_PORT = os.getenv("GVM_PORT")
