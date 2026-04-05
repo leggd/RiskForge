@@ -17,7 +17,7 @@ def audit_logs():
         return redirect("/login")
 
     if not require_role("ADMIN"):
-        abort(403)
+        abort(403, description="Only admins can access audit logs")
 
     # Retrieve optional filter parameters from query string
     action = request.args.get("action")
@@ -70,8 +70,8 @@ def audit_logs():
         logs = execute_query(sql, filter_parameters, "all")
 
     except Exception as e:
-        logs = []
-        users = []
+        print(e)
+        abort(500,description="Audit Logs failed to load due to database error")
 
     return render_template(
         "audit.html",

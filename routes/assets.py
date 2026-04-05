@@ -39,7 +39,7 @@ def assets():
         if result:
             selected_os = result["os"]
 
-    # Retrieve filter parameter for retired assets
+    # Determine if show retired button is pressed
     show_retired = request.args.get("show_retired")
 
     # Retrieve assets from database
@@ -51,11 +51,11 @@ def assets():
 
         filter_parameters = []
 
-        # If checkbox is not ticked only show active assets
+        # If button not pressed show only active assets
         if show_retired != "1":
             sql += " AND retired = FALSE"
 
-        # If checkbox is ticked show all including retired
+        # If button not pressed show all assets including retired
         sql += " ORDER BY created_at DESC"
 
         filter_parameters = tuple(filter_parameters)
@@ -64,8 +64,9 @@ def assets():
 
     # Handle database errors gracefully
     except Exception as e:
-        asset_list = []
-        error = "Database error: " + str(e)
+        print(e)
+        error = "Database error"
+        
 
     # Render template with asset and discovery data
     return render_template(
@@ -77,8 +78,7 @@ def assets():
         selected_ip=selected_ip,
         selected_os=selected_os,
         username=session["username"],
-        role=session["role"]
-    )
+        role=session["role"])
 
 @assets_bp.route("/assets", methods=["POST"])
 def add_asset():
@@ -86,7 +86,7 @@ def add_asset():
     Create a new asset
 
     Validates user input, checks for duplicate assets, inserts the record
-    into the database and logs the creation event.
+    into the database and logs the creation event
     """
     
     # Ensure user is authenticated via session cookie
@@ -163,11 +163,13 @@ def add_asset():
                         )
 
                     except Exception as e:
-                        error = "Error adding asset: " + str(e)
-
+                        print(e)
+                        error = "Error adding asset"
+                        
             except Exception as e:
-                error = "Wider Error: " + str(e)
-
+                print(e)
+                error = "Database Error"
+                
     # Redirect back to assets page after form submission
     return redirect("/assets")
 
@@ -177,7 +179,7 @@ def asset_detail(asset_id):
     Render the asset detail page
 
     Displays detailed information for a specific asset and supports
-    optional edit mode via ?edit=1
+    optional edit mode
     """
 
     # Ensure user is authenticated via session cookie
@@ -208,7 +210,8 @@ def asset_detail(asset_id):
             role=session["role"])
 
     except Exception as e:
-        abort(500, description="Failed to load asset")
+        print(e)
+        abort(500, description=f"Failed to load asset due to a database error")
 
 @assets_bp.route("/assets/<int:asset_id>/update", methods=["POST"])
 def update_asset(asset_id):
@@ -286,7 +289,8 @@ def update_asset(asset_id):
     
     # Handle any other errors during update
     except Exception as e:
-        return "Error updating asset: " + str(e)
+        print(e)
+        abort(500,description="Error updating asset due to a database error")
 
 @assets_bp.route("/assets/<int:asset_id>/retire", methods=["POST"])
 def retire_asset(asset_id):
@@ -333,4 +337,5 @@ def retire_asset(asset_id):
         return redirect("/assets")
 
     except Exception as e:
-        return "Error retiring asset: " + str(e)
+        print(e)
+        abort(500,description="Error retiring asset due to a database error")

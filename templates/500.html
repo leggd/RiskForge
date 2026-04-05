@@ -1,25 +1,29 @@
-{% extends "base.html" %}
+{% extends "base_public.html" %}
 
-{% block title %}Server Error{% endblock %}
-{% block page_h1 %}500{% endblock %}
-{% block page_subtitle %}Something went wrong{% endblock %}
+{% block title %}500 — Server Error{% endblock %}
 
 {% block content %}
 
-<article class="card">
-  <div style="padding: 16px;">
-    <h2>Unexpected Error</h2>
-    {# Show error messaged passed from back end if available #}
-    {% if error %}
-      <p>{{ error }}</p>
-    {% else %}
-      <p>An unexpected error occurred. Please try again later.</p>
-    {% endif %}
+<div class="card" style="max-width:500px; width:100%; text-align:center; padding:32px;">
 
-    <div class="row-actions" style="margin-top:12px;">
-      <a class="btn btn-primary" href="/dashboard">Go to Dashboard</a>
-    </div>
+  <h1 style="font-size:48px; margin-bottom:8px;">500</h1>
+
+  <p class="cell-sub" style="margin-bottom:20px;">
+    {% if error %}
+      {{ error }}
+    {% else %}
+      An unexpected error occurred. Please try again later.
+    {% endif %}
+  </p>
+
+  <div style="display:flex; gap:10px; justify-content:center;">
+
+    <button class="btn btn-primary"
+            onclick="if(document.referrer){history.back()}else{window.location='/login'}">
+      Go Back
+    </button>
   </div>
-</article>
+
+</div>
 
 {% endblock %}

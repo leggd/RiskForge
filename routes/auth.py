@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, session
+from flask import Blueprint, render_template, request, redirect, session,abort
 import bcrypt
 from db import execute_query
 from services.audit_service import log_event
@@ -12,7 +12,7 @@ def unlock_account(user_id):
         sql = """UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE user_id = %s"""
         execute_query(sql, (user_id))
     except Exception as e:
-        print(f"error unlocking account: {e}")
+        print(f"error unlockin account: {e}")
 
 # updates database with the failed attempts number 
 def failed_log(user_id, failed_attempts):
@@ -132,7 +132,9 @@ def login():
                             error = f"Incorrect credentials, {remaining} attempts remaining"
 
         except Exception as e:
-            error = str(e)
+            print(e)
+            error = """Login Failed due to internal server error,
+                       please contact your administrators"""
 
     return render_template("login.html", error=error)
 

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, session
+from flask import Blueprint, render_template, redirect, session, abort
 from services.system_health import check_gvm_connection, check_ai_connection, check_db_connection, check_web_server
 from db import execute_query
 
@@ -95,37 +95,26 @@ def dashboard():
         recent_scans = execute_query(sql, None, "all")
 
     except Exception as e:
-        print("Dashboard error:", e)
-
-        active_assets = retired_assets = total_assets = 0
-        total_scans = active_scans = completed_scans = failed_scans = 0
-        total_findings = critical_findings = high_findings = 0
-        open_tickets = in_progress_tickets = 0
-        critical_tickets = high_tickets = medium_tickets = low_tickets = 0
-        top_assets = []
-        recent_scans = []
-        gvm_status = False
-        ai_status = False
-        db_status= False
-        web_status= False
+        print(e)
+        abort(500, description="Dashboard failed to load due to database error")
 
     metrics = {
-        "total_assets": total_assets,
-        "active_assets": active_assets,
-        "retired_assets": retired_assets,
-        "total_scans": total_scans,
-        "active_scans": active_scans,
-        "completed_scans": completed_scans,
-        "failed_scans": failed_scans,
-        "total_findings": total_findings,
-        "critical_findings": critical_findings,
-        "high_findings": high_findings,
-        "open_tickets": open_tickets,
-        "in_progress_tickets": in_progress_tickets,
-        "critical_tickets": critical_tickets,
-        "high_tickets": high_tickets,
-        "medium_tickets": medium_tickets,
-        "low_tickets": low_tickets}
+        "total_assets":total_assets,
+        "active_assets":active_assets,
+        "retired_assets":retired_assets,
+        "total_scans":total_scans,
+        "active_scans":active_scans,
+        "completed_scans":completed_scans,
+        "failed_scans":failed_scans,
+        "total_findings":total_findings,
+        "critical_findings":critical_findings,
+        "high_findings":high_findings,
+        "open_tickets":open_tickets,
+        "in_progress_tickets":in_progress_tickets,
+        "critical_tickets":critical_tickets,
+        "high_tickets":high_tickets,
+        "medium_tickets":medium_tickets,
+        "low_tickets":low_tickets}
 
     return render_template(
         "dashboard.html",

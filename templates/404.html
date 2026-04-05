@@ -1,20 +1,25 @@
-{% extends "base.html" %}
+{% extends "base_public.html" %}
 
-{% block title %}Page Not Found{% endblock %}
-{% block page_h1 %}404{% endblock %}
-{% block page_subtitle %}Page not found{% endblock %}
+{% block title %}404 — Not Found{% endblock %}
 
 {% block content %}
 
-<article class="card">
-  <div style="padding: 16px;">
-    <h2>Page Not Found</h2>
-    <p>The page you are looking for could not be found.</p>
+<div class="card" style="max-width:500px; width:100%; text-align:center; padding:32px;">
 
-    <div class="row-actions" style="margin-top:12px;">
-      <a class="btn btn-primary" href="/dashboard">Go to Dashboard</a>
-    </div>
+  <h1 style="font-size:48px; margin-bottom:8px;">404</h1>
+
+  <p class="cell-sub" style="margin-bottom:20px;">
+    The page you’re looking for does not exist.
+  </p>
+
+  <div style="display:flex; gap:10px; justify-content:center;">
+
+    <button class="btn btn-primary" onclick="history.back()">
+      Go Back
+    </button>
+
   </div>
-</article>
+
+</div>
 
 {% endblock %}

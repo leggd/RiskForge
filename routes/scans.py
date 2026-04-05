@@ -48,10 +48,8 @@ def scans():
         asset_list = execute_query(sql, None, "all")
 
     except Exception as e:
-        # Fallback to empty lists if database query fails
-        scan_list = []
-        asset_list = []
-        print("Error loading scans: " + str(e))
+        print(e)
+        abort(500,description="Scan list failed to load due to database error")
 
     # Render scans page with history and available assets
     return render_template(
@@ -266,7 +264,8 @@ def start_scan():
 
     # Handle unexpected errors during scan initialisation
     except Exception as e:
-        print("Error starting scan: " + str(e))
+        print(e)
+        abort(500,description="Scan failed to start due to database error")
 
     # Redirect back to scans page after request handling
     return redirect("/scans")
@@ -353,8 +352,8 @@ def scan_detail(scan_id):
                 findings = get_gvm_findings(scan["gvm_report_id"], limit=200)
             except Exception as e:
                 # Handle errors during GVM findings retrieval
-                print("Error fetching GVM findings: " + str(e))
-                findings = []
+                print(e)
+                abort(500,description="Error fetching GVM findings")
 
         # Retrieve stored findings from database for this scan
         sql = """
@@ -376,4 +375,5 @@ def scan_detail(scan_id):
 
     # Handle unexpected errors during scan retrieval
     except Exception as e:
-        return "Error loading scan: " + str(e)
+        print(e)
+        abort(500,description="Fetching scan detail failed due to database error")

@@ -75,9 +75,8 @@ def tickets():
         ticket_list = execute_query(sql, filter_parameters, "all")
 
     except Exception as e:
-        # Fallback to empty list if database query fails
-        ticket_list = []
-        print("Error loading tickets: " + str(e))
+        print(e)
+        abort(500,description="Failed to load ticket list due to database error")
 
     # Render tickets page with retrieved data
     return render_template(
@@ -126,7 +125,8 @@ def ticket_detail(ticket_id):
 
     # Handle unexpected errors during retrieval
     except Exception as e:
-        return "Error loading ticket: " + str(e)
+        print(e)
+        abort(500,description="Failed to load ticket detail due to database error")
 
 @tickets_bp.route("/tickets/<int:ticket_id>/update", methods=["POST"])
 def update_ticket(ticket_id):
@@ -214,7 +214,8 @@ def update_ticket(ticket_id):
     
     # Handle unexpected errors during update
     except Exception as e:
-        return "Error updating ticket: " + str(e)
+        print(e)
+        abort(500,description="Failed to update ticket due to database error")
 
 @tickets_bp.route("/tickets/<int:ticket_id>/ai", methods=["POST"])
 def generate_ticket_ai(ticket_id):
@@ -238,17 +239,22 @@ def generate_ticket_ai(ticket_id):
         abort(404)
 
     # Run AI using description
-    description = ticket.get("description", "")
-    ai_output = generate_ai(description)
+    try:
+        description = ticket.get("description", "")
+        ai_output = generate_ai(description)
 
-    # Save result to DB
-    sql = """
-    UPDATE tickets
-    SET ai_summary = %s,
-    ai_generated_at = NOW()
-    WHERE ticket_id = %s
-    """
-    execute_query(sql, (ai_output, ticket_id))
+        # Save result to DB
+        sql = """
+        UPDATE tickets
+        SET ai_summary = %s,
+        ai_generated_at = NOW()
+        WHERE ticket_id = %s
+        """
+        execute_query(sql, (ai_output, ticket_id))
 
-    # Go back to specific ticket detail page
-    return redirect(f"/tickets/{ticket_id}")
+        return redirect(f"/tickets/{ticket_id}")
+    except Exception as e:
+        print(e)
+        abort(500,description="Failed to generate or save AI ticket insight")
+
+    
