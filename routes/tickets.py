@@ -239,10 +239,9 @@ def generate_ticket_ai(ticket_id):
         abort(404)
 
     # Run AI using description
+    description = ticket.get("description", "")
+    ai_output = generate_ai(description)
     try:
-        description = ticket.get("description", "")
-        ai_output = generate_ai(description)
-
         # Save result to DB
         sql = """
         UPDATE tickets
