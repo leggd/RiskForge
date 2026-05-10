@@ -1,318 +1,261 @@
-# RiskForge
+<div align="center">
 
-RiskForge is a full-stack vulnerability management and security operations platform designed to help organisations identify, prioritise and remediate security vulnerabilities across enterprise environments.
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0b1220&height=180&section=header&text=Daniel%20Legg&fontSize=40&fontColor=ffffff&animation=fadeIn&fontAlignY=35"/>
 
-The platform integrates asset management, vulnerability scanning, risk scoring, ticketing workflows and AI-assisted analysis into a unified web interface. RiskForge was designed as a modular system using a dedicated remote scanner host for distributed vulnerability assessment operations.
+<h3>
+Cyber Security Undergraduate • Enterprise Security • Networking • Security Operations
+</h3>
 
----
+<p>
+  <a href="https://www.linkedin.com/in/daniel-legg-0b3387309/">
+    <img src="https://img.shields.io/badge/LinkedIn-0b1220?style=for-the-badge&logo=linkedin&logoColor=white">
+  </a>
+</p>
 
-# Project Overview
+<br>
 
-This project was developed as part of a university enterprise team project.
+<img src="https://img.shields.io/badge/Python-111827?style=for-the-badge&logo=python&logoColor=white">
+<img src="https://img.shields.io/badge/Linux-111827?style=for-the-badge&logo=linux&logoColor=white">
+<img src="https://img.shields.io/badge/Cisco-111827?style=for-the-badge&logo=cisco&logoColor=white">
+<img src="https://img.shields.io/badge/Flask-111827?style=for-the-badge&logo=flask&logoColor=white">
+<img src="https://img.shields.io/badge/MySQL-111827?style=for-the-badge&logo=mysql&logoColor=white">
+<img src="https://img.shields.io/badge/Git-111827?style=for-the-badge&logo=git&logoColor=white">
 
-## My Primary Contributions
-
-* Full-stack application development
-* Backend Flask development
-* Database integration and query logic
-* Authentication and RBAC implementation
-* Vulnerability scanning integration
-* AI-assisted remediation functionality
-* Ticketing workflow implementation
-* System architecture and debugging
-* Scanner host integration and automation
-* Frontend feature integration and UI functionality
-
----
-
-# Demonstration Videos
-
-The following narrated demonstrations showcase the core functionality and architecture of the RiskForge platform.
-
-## 1. Vulnerability Scanning Demo
-
-[![Scan Demo](https://img.youtube.com/vi/He8pirDpnNY/0.jpg)](https://www.youtube.com/watch?v=He8pirDpnNY)
-
-## 2. AI Analysis Demo
-
-[![AI Analysis Demo](https://img.youtube.com/vi/9RPTM5JoL04/0.jpg)](https://www.youtube.com/watch?v=9RPTM5JoL04)
-
-## 3. Ticket Management Demo
-
-[![Ticket Demo](https://img.youtube.com/vi/v8bhIYwOegM/0.jpg)](https://www.youtube.com/watch?v=v8bhIYwOegM)
-
-## 4. Asset Management Demo
-
-[![Asset Management Demo](https://img.youtube.com/vi/PoDzsIuP4c4/0.jpg)](https://www.youtube.com/watch?v=PoDzsIuP4c4)
-
-## 5. Authentication & RBAC Demo
-
-[![Authentication Demo](https://img.youtube.com/vi/j2OBDMN9C8M/0.jpg)](https://www.youtube.com/watch?v=j2OBDMN9C8M)
-
-## 6. Audit Logging Demo
-
-[![Audit Log Demo](https://img.youtube.com/vi/lqW68M0Yxks/0.jpg)](https://www.youtube.com/watch?v=lqW68M0Yxks)
+</div>
 
 ---
 
-# Documentation
+<table>
+<tr>
+<td width="60%" valign="top">
 
-Additional project documentation is available in the `/docs` directory.
+<h2> About Me</h2>
 
-## Included Documentation
+<p>
+Currently progressing through the <strong>BSc (Hons) Cyber Security</strong> degree at Teesside University with first-class grades, building practical experience through infrastructure labs, security-focused development and enterprise security projects.
+</p>
 
-* Technical report
-* Industry presentation
-* UML diagrams
-* System design documentation
+<br>
 
----
+<p>
+My professional background includes several years of experience across:
+</p>
 
-# Features
+<ul>
+<li>Telecommunications support</li>
+<li>Fraud prevention & risk analysis</li>
+<li>Technical troubleshooting</li>
+<li>Operational escalation handling</li>
+<li>Compliance & data protection</li>
+</ul>
 
-* Asset discovery and management
-* Vulnerability scanning orchestration
-* Risk-based vulnerability prioritisation
-* Automatic ticket generation from findings
-* Role-Based Access Control (RBAC)
-* AI-powered vulnerability explanation and remediation guidance
-* System health monitoring
-* Dashboard with real-time security posture overview
-* Remote scanner host integration
-* Audit logging and activity tracking
+<p>
+This experience developed a strong foundation in structured troubleshooting, enterprise support environments and operational security processes.
+</p>
 
----
+</td>
 
-# Technology Stack
+<td width="40%" valign="top">
 
-## Backend
+<h2> Current Focus</h2>
 
-* Flask (Python)
+<ul>
+<li>Enterprise Networking</li>
+<li>Infrastructure Security</li>
+<li>Security Operations (SOC)</li>
+<li>Identity & Access Management</li>
+<li>Linux Administration</li>
+<li>Python Automation</li>
+<li>Security Engineering</li>
+<li>Vulnerability Management</li>
+</ul>
 
-## Database
-
-* MySQL / MariaDB
-
-## Frontend
-
-* Jinja2
-* HTML/CSS
-* JavaScript
-
-## Security & Scanning Tools
-
-* GVM (OpenVAS)
-* Nmap
-* Nikto
-* Nuclei
-* testssl.sh
-* Gobuster
-* sqlmap
-* enum4linux
-
-## AI Integration
-
-* Groq API
+</td>
+</tr>
+</table>
 
 ---
 
-# System Architecture
+<div align="center">
 
-RiskForge operates using a distributed scanning architecture:
+## Certification Roadmap
 
-1. Flask application handles orchestration and frontend logic
-2. SSH communication connects to a dedicated scanner host
-3. Remote scanning tools execute on the scanner system
-4. Results are processed and normalised
-5. Findings are converted into actionable tickets
-6. AI-assisted analysis provides remediation guidance
+<table>
+<tr>
+<td align="center" width="220">
+
+<h3>CCNA</h3>
+
+Enterprise Networking  
+Routing & Switching  
+Infrastructure Fundamentals
+
+</td>
+
+<td align="center" width="220">
+
+<h3>SC-300</h3>
+
+Identity & Access Management  
+Entra ID  
+Conditional Access
+
+</td>
+
+<td align="center" width="220">
+
+<h3>CySA+</h3>
+
+Security Operations  
+Threat Detection  
+Incident Response
+
+</td>
+</tr>
+</table>
+
+</div>
 
 ---
 
-# Project Structure
+# Featured Project — RiskForge
+
+<table>
+<tr>
+<td width="65%" valign="top">
+
+<h3> Vulnerability Management & Security Operations Platform</h3>
+
+<p>
+Full-stack enterprise security platform integrating:
+</p>
+
+<ul>
+<li>OpenVAS / GVM orchestration</li>
+<li>Nmap integration</li>
+<li>AI-assisted remediation guidance</li>
+<li>Vulnerability ticketing workflows</li>
+<li>Asset management</li>
+<li>RBAC authentication systems</li>
+<li>Remote scanner orchestration</li>
+</ul>
+
+<br>
+
+<h3> Primary Contributions</h3>
+
+<ul>
+<li>Full-stack application development</li>
+<li>Flask backend implementation</li>
+<li>Database integration</li>
+<li>Scanner orchestration & automation</li>
+<li>Authentication & RBAC</li>
+<li>Frontend feature integration</li>
+<li>System architecture & debugging</li>
+</ul>
+
+</td>
+
+<td width="35%" valign="top">
+
+<h3> Technologies</h3>
+
+<img src="https://img.shields.io/badge/Python-111827?style=for-the-badge&logo=python&logoColor=white"><br><br>
+<img src="https://img.shields.io/badge/Flask-111827?style=for-the-badge&logo=flask&logoColor=white"><br><br>
+<img src="https://img.shields.io/badge/Linux-111827?style=for-the-badge&logo=linux&logoColor=white"><br><br>
+<img src="https://img.shields.io/badge/MySQL-111827?style=for-the-badge&logo=mysql&logoColor=white"><br><br>
+<img src="https://img.shields.io/badge/OpenVAS-111827?style=for-the-badge"><br><br>
+<img src="https://img.shields.io/badge/Nmap-111827?style=for-the-badge">
+
+</td>
+</tr>
+</table>
+
+---
+
+# Labs & Projects
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+<h3> Networking & Security Labs</h3>
+
+<ul>
+<li>Packet Tracer networking labs</li>
+<li>VLAN segmentation</li>
+<li>OSPF routing</li>
+<li>ACL implementation</li>
+<li>Active Directory lab environment</li>
+<li>SIEM & log analysis projects</li>
+</ul>
+
+</td>
+
+<td width="50%" valign="top">
+
+<h3> Development Projects</h3>
+
+<ul>
+<li>Python automation utilities</li>
+<li>SQL portfolio projects</li>
+<li>Bash scripting exercises</li>
+<li>Procedural Python game projects</li>
+</ul>
+
+</td>
+</tr>
+</table>
+
+---
+
+# Technical Interests
+
+<div align="center">
+
+| Security | Infrastructure | Operations |
+|---|---|---|
+| Network Security | Linux Administration | SIEM Monitoring |
+| Security Engineering | Enterprise Networking | Threat Detection |
+| Vulnerability Management | Identity Security | Incident Response |
+
+</div>
+
+---
+
+# Professional Background
 
 ```text
-/services     -> AI, scanning and authentication logic
-/templates    -> HTML templates
-/static       -> CSS, JavaScript and frontend assets
-/routes       -> Flask route handlers
-/docs         -> Reports, presentations and UML diagrams
-db.py         -> Database integration
-app.py        -> Application entry point
+• Broadband & fibre troubleshooting
+• VoIP and networking support
+• Fraud prevention & transaction analysis
+• Customer technical support
+• Operational escalation handling
+• Compliance & data protection procedures
 ```
 
 ---
 
-# Requirements
+# Career Goals
 
-* Python 3.10+
-* MySQL / MariaDB
-* Linux environment (recommended)
-* Dedicated scanner host (Kali Linux recommended)
-* Network connectivity between application and scanner host
+<p>
+Currently pursuing a career within cyber security focused on:
+</p>
 
----
+<ul>
+<li>Security Operations</li>
+<li>Infrastructure Security</li>
+<li>Vulnerability Management</li>
+<li>Security Engineering</li>
+<li>Cloud & Identity Security</li>
+</ul>
 
-# Installation
+<p>
+while continuing to expand both practical and enterprise-level technical experience.
+</p>
 
-## Clone Repository
+<div align="center">
 
-```bash
-git clone https://github.com/leggd/riskforge.git
-cd riskforge
-```
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0b1220&height=120&section=footer"/>
 
-## Create Virtual Environment
-
-```bash
-python -m venv venv
-source venv/bin/activate
-```
-
-## Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-# Environment Configuration
-
-Create a `.env` file in the project root:
-
-```env
-SECRET_KEY=your_secret_key
-
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=riskforge
-DB_PORT=3306
-
-GROQ_API_KEY=your_groq_api_key
-
-SCANNER_HOST=10.0.96.x
-
-GVM_PORT=9390
-GVM_USERNAME=your_gvm_username
-GVM_PASSWORD=your_gvm_password
-
-KALI_USER=your_kali_username
-KALI_PASS=your_kali_password
-REMOTE_SCRIPT=/home/kali/scanner.py
-```
-
----
-
-# Database Setup
-
-## Create Database
-
-```sql
-CREATE DATABASE riskforge;
-```
-
-## Import Database
-
-### Recommended
-
-```bash
-mysql -u root -p riskforge < db_dump.txt
-```
-
-### Alternative
-
-```bash
-mysql -u root -p riskforge < db_schema.txt
-```
-
----
-
-# Running the Application
-
-```bash
-flask run --host=0.0.0.0
-```
-
-Application available at:
-
-```text
-http://localhost:5000
-```
-
----
-
-# Scanner Host Setup
-
-RiskForge requires a dedicated remote scanner host.
-
-## Recommended Environment
-
-* Kali Linux
-* SSH enabled
-* Same network accessibility as Flask host
-
-## Required Tools
-
-```bash
-sudo apt update
-
-sudo apt install -y \
-nmap \
-nikto \
-gobuster \
-sqlmap \
-enum4linux \
-nuclei
-```
-
----
-
-# GVM (OpenVAS) Setup
-
-Ensure:
-
-* `gvmd` is running
-* OpenVAS scanner operational
-* GMP accessible on port 9390
-
-Verify setup:
-
-```bash
-gvm-check-setup
-```
-
----
-
-# Common Issues
-
-## No Scan Results
-
-* Verify scanner host connectivity
-* Confirm required tools installed
-* Check SSH credentials
-
-## GVM Issues
-
-* Ensure port 9390 accessible
-* Verify `gvmd` service status
-
-## Login Problems
-
-* Ensure bcrypt hashes used
-* Plain-text passwords are unsupported
-
-## AI Integration Issues
-
-* Verify `GROQ_API_KEY`
-* Confirm internet connectivity
-
----
-
-# Notes
-
-* Flask server is intended for development use only
-* Production deployments should use Gunicorn + Nginx
-* SSL verification may be disabled for internal testing environments
-* This repository contains a redacted version of the project with sensitive information removed
+</div>
